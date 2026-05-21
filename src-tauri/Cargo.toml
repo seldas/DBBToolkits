@@ -1,0 +1,21 @@
+[package]
+name = "dbbtoolkits"
+version = "1.1.0"
+description = "Scientific Research Tool Suite"
+authors = ["Antigravity"]
+edition = "2021"
+
+[lib]
+name = "dbbtoolkits_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = [] }
+tauri-plugin-shell = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1.0", features = ["full"] }

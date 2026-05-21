@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBBtoolkits - Scientific Research Tool Suite</title>
+    <!-- Meta tags for SEO & Info -->
+    <meta name="description" content="DBBtoolkits is a premium suite of small, high-performance scientific tools designed to streamline daily research workflows, featuring QR code generation, figure DPI conversion, and LLM status testing.">
+    <!-- Google Fonts: Outfit for headers, Inter for UI text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons via CDN for modern clean iconography -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">DBB</div>
+                <h1 class="brand-name">DBBtoolkits</h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-item active" id="nav-dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#qrcode" class="nav-item" id="nav-qrcode">
+                    <i data-lucide="qr-code"></i>
+                    <span>QR Generator</span>
+                </a>
+                <a href="#dpi" class="nav-item" id="nav-dpi">
+                    <i data-lucide="image"></i>
+                    <span>DPI Converter</span>
+                </a>
+                <a href="#table" class="nav-item" id="nav-table">
+                    <i data-lucide="table"></i>
+                    <span>Table Converter</span>
+                </a>
+                <a href="#diff" class="nav-item" id="nav-diff">
+                    <i data-lucide="git-compare"></i>
+                    <span>Diff Checker</span>
+                </a>
+                <a href="#bibtex" class="nav-item" id="nav-bibtex">
+                    <i data-lucide="book-open"></i>
+                    <span>BibTeX Cleaner</span>
+                </a>
+                <a href="#llm" class="nav-item" id="nav-llm">
+                    <i data-lucide="cpu"></i>
+                    <span>LLM Toolkits</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="theme-toggle" id="theme-toggle-btn">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                    <span>Light Mode</span>
+                </div>
+                <div class="version">v1.1.0</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-title">
+                    <h2 id="page-title">Welcome to DBBtoolkits</h2>
+                    <p id="page-description">Select a tool from the sidebar to streamline your scientific research workflow.</p>
+                </div>
+            </header>
+
+            <!-- Screen: Dashboard -->
+            <section id="screen-dashboard" class="screen-content active">
+                <div class="hero-section">
+                    <h2>Accelerate Your Research</h2>
+                    <p>A curated collection of micro-utilities built specifically for scientists and researchers. No uploads to external servers, maximum privacy, and instant results.</p>
+                </div>
+
+                <div class="tools-grid">
+                    <!-- Tool Card 1: QR Generator -->
+                    <div class="tool-card" onclick="navigateTo('qrcode')">
+                        <div class="card-icon qr-bg">
+                            <i data-lucide="qr-code"></i>
+                        </div>
+                        <h3>QR Code Generator</h3>
+                        <p>Generate high-quality vector and raster QR codes for posters, presentations, and paper links with custom branding.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Tool Card 2: DPI Converter -->
+                    <div class="tool-card" onclick="navigateTo('dpi')">
+                        <div class="card-icon dpi-bg">
+                            <i data-lucide="image"></i>
+                        </div>
+                        <h3>Figure DPI Converter</h3>
+                        <p>Prepare images for journal submissions by converting them to 300 or 600 DPI without altering pixel dimensions or quality.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Tool Card 3: Table Converter -->
+                    <div class="tool-card" onclick="navigateTo('table')">
+                        <div class="card-icon table-bg">
+                            <i data-lucide="table"></i>
+                        </div>
+                        <h3>Universal Table Converter</h3>
+                        <p>Convert Excel cells, CSV, or TSV data directly into aligned Markdown tables, and vice versa.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Tool Card 4: Diff Checker -->
+                    <div class="tool-card" onclick="navigateTo('diff')">
+                        <div class="card-icon diff-bg">
+                            <i data-lucide="git-compare"></i>
+                        </div>
+                        <h3>Local Privacy Diff Checker</h3>
+                        <p>Compare two versions of an abstract, prompt, or code locally. Computes differences securely in-browser.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Tool Card 5: BibTeX Cleaner -->
+                    <div class="tool-card" onclick="navigateTo('bibtex')">
+                        <div class="card-icon bibtex-bg">
+                            <i data-lucide="book-open"></i>
+                        </div>
+                        <h3>BibTeX Citation Cleaner</h3>
+                        <p>Clean Google Scholar or PubMed exported citations. Removes redundant fields and preserves title capitalization.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Tool Card 6: LLM Toolkits -->
+                    <div class="tool-card" onclick="navigateTo('llm')">
+                        <div class="card-icon llm-bg">
+                            <i data-lucide="cpu"></i>
+                        </div>
+                        <h3>LLM Toolkits & JSON Fixer</h3>
+                        <p>Verify connection parameters of local LLM servers (Ollama, vLLM) and repair broken/truncated JSON outputs.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: QR Code Generator -->
+            <section id="screen-qrcode" class="screen-content">
+                <div class="two-column-layout">
+                    <!-- Controls Card -->
+                    <div class="control-panel">
+                        <h3>Configuration</h3>
+                        <div class="form-group">
+                            <label for="qr-text">Text or URL</label>
+                            <input type="text" id="qr-text" placeholder="https://doi.org/10.1145/..." value="https://github.com/">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="qr-size">Size (px)</label>
+                                <select id="qr-size">
+                                    <option value="256">256 x 256</option>
+                                    <option value="512" selected>512 x 512</option>
+                                    <option value="1024">1024 x 1024</option>
+                                    <option value="2048">2048 x 2048</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="qr-error-level">Error Correction</label>
+                                <select id="qr-error-level">
+                                    <option value="L">L (Low ~7%)</option>
+                                    <option value="M" selected>M (Medium ~15%)</option>
+                                    <option value="Q">Q (Quartile ~25%)</option>
+                                    <option value="H">H (High ~30%)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="qr-fg-color">Foreground Color</label>
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="qr-fg-color" value="#0f172a">
+                                    <input type="text" id="qr-fg-text" value="#0f172a" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="qr-bg-color">Background Color</label>
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="qr-bg-color" value="#ffffff">
+                                    <input type="text" id="qr-bg-text" value="#ffffff" maxlength="7">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button id="btn-generate-qr" class="btn btn-primary">
+                                <i data-lucide="play"></i> Generate QR Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Output Card -->
+                    <div class="preview-panel">
+                        <h3>Preview</h3>
+                        <div class="qr-preview-container">
+                            <canvas id="qr-canvas"></canvas>
+                            <div class="placeholder-text" id="qr-placeholder">
+                                <i data-lucide="qr-code"></i>
+                                <p>Click Generate to preview</p>
+                            </div>
+                        </div>
+                        <div class="preview-actions">
+                            <button id="btn-download-png" class="btn btn-secondary" disabled>
+                                <i data-lucide="download"></i> Download PNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: Figure DPI Converter -->
+            <section id="screen-dpi" class="screen-content">
+                <div class="two-column-layout">
+                    <!-- Controls Card -->
+                    <div class="control-panel">
+                        <h3>Conversion Settings</h3>
+                        
+                        <div class="drop-zone" id="dpi-drop-zone">
+                            <i data-lucide="upload-cloud" class="upload-icon"></i>
+                            <p class="drop-text-primary">Drag & drop your figure here</p>
+                            <p class="drop-text-secondary">Supports PNG, JPEG, TIFF (Max 50MB)</p>
+                            <input type="file" id="dpi-file-input" accept="image/png, image/jpeg, image/tiff" style="display: none;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-select-file">Browse File</button>
+                        </div>
+
+                        <div class="file-details-card hidden" id="file-details">
+                            <div class="file-info-icon"><i data-lucide="file-image"></i></div>
+                            <div class="file-meta">
+                                <span class="file-name" id="file-details-name">figure.png</span>
+                                <span class="file-size" id="file-details-size">1.2 MB</span>
+                            </div>
+                            <button type="button" class="btn-icon btn-danger-icon" id="btn-remove-file">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="target-dpi">Target Resolution (DPI)</label>
+                                <select id="target-dpi">
+                                    <option value="72">72 DPI (Web/Screen)</option>
+                                    <option value="150">150 DPI (Standard Print)</option>
+                                    <option value="300" selected>300 DPI (Standard Journal)</option>
+                                    <option value="600">600 DPI (High-res Line Art)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button id="btn-convert-dpi" class="btn btn-primary" disabled>
+                                <i data-lucide="refresh-cw"></i> Convert and Download
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Details Card -->
+                    <div class="preview-panel">
+                        <h3>Metadata Info</h3>
+                        <div class="metadata-table-container">
+                            <table class="metadata-table">
+                                <thead>
+                                    <tr>
+                                        <th>Property</th>
+                                        <th>Original</th>
+                                        <th>Target</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Dimensions (Pixels)</td>
+                                        <td id="meta-orig-dimensions">-</td>
+                                        <td id="meta-target-dimensions">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Print Size (Inches)</td>
+                                        <td id="meta-orig-print-size">-</td>
+                                        <td id="meta-target-print-size" class="highlight-text">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Resolution (DPI)</td>
+                                        <td id="meta-orig-dpi">-</td>
+                                        <td id="meta-target-dpi" class="highlight-text">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>File Format</td>
+                                        <td id="meta-orig-format">-</td>
+                                        <td id="meta-target-format">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="info-alert">
+                            <i data-lucide="info"></i>
+                            <p>This converter rewrites the metadata headers directly in your browser. Pixel colors are unmodified (no compression quality loss), keeping your original scientific figures perfect.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: Universal Table Converter -->
+            <section id="screen-table" class="screen-content">
+                <div class="two-column-layout">
+                    <!-- Excel Input Panel -->
+                    <div class="control-panel">
+                        <h3>Excel / CSV Cell Input</h3>
+                        <p class="instruction-text">Paste rows directly from Excel/Google Sheets, or paste raw CSV text.</p>
+                        <div class="form-group flex-grow">
+                            <textarea id="table-raw-input" class="monospaced-textarea" placeholder="Paste data here... (e.g. Column1[Tab]Column2)"></textarea>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-table-to-md" class="btn btn-primary">
+                                Convert to Markdown <i data-lucide="chevron-right"></i>
+                            </button>
+                            <button id="btn-clear-table-input" class="btn btn-secondary btn-sm">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Markdown Output Panel -->
+                    <div class="preview-panel">
+                        <h3>Markdown Table Output</h3>
+                        <p class="instruction-text">Copy the aligned Markdown table for GitHub, journals, or documentation.</p>
+                        <div class="form-group flex-grow">
+                            <textarea id="table-md-output" class="monospaced-textarea" placeholder="| Col 1 | Col 2 |&#10;|---|---|&#10;| Val 1 | Val 2 |"></textarea>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-md-to-table" class="btn btn-secondary">
+                                <i data-lucide="chevron-left"></i> Convert to CSV/Excel
+                            </button>
+                            <button id="btn-copy-table-result" class="btn btn-primary">
+                                <i data-lucide="copy"></i> Copy Output
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: Local Privacy Diff Checker -->
+            <section id="screen-diff" class="screen-content">
+                <div class="diff-container">
+                    <div class="diff-editors">
+                        <!-- Original Text Area -->
+                        <div class="control-panel">
+                            <h3>Original Text (Abstract, Prompt, Code)</h3>
+                            <div class="form-group flex-grow">
+                                <textarea id="diff-text-original" placeholder="Paste the original version here..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Modified Text Area -->
+                        <div class="control-panel">
+                            <h3>Modified Text</h3>
+                            <div class="form-group flex-grow">
+                                <textarea id="diff-text-modified" placeholder="Paste the modified version here..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compare Trigger and Visual Output -->
+                    <div class="control-panel" style="width: 100%;">
+                        <div class="diff-actions">
+                            <button id="btn-compare-diff" class="btn btn-primary">
+                                <i data-lucide="git-compare"></i> Compare Texts Locally
+                            </button>
+                            <div class="radio-group" style="margin-left: auto;">
+                                <label class="radio-label">
+                                    <input type="radio" name="diff-mode" value="line" checked>
+                                    <span>Line-by-Line</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="diff-mode" value="word">
+                                    <span>Word-by-Word</span>
+                                </label>
+                            </div>
+                            <button id="btn-clear-diff" class="btn btn-secondary">Clear</button>
+                        </div>
+
+                        <div class="diff-output-wrapper">
+                            <h4>Comparison Output</h4>
+                            <div id="diff-rendered-output" class="diff-render-box">
+                                <span class="placeholder-text">Press "Compare Texts Locally" to compute and view the visual diff here. All operations run entirely in-browser.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: BibTeX Citation Cleaner -->
+            <section id="screen-bibtex" class="screen-content">
+                <div class="two-column-layout">
+                    <!-- Inputs Card -->
+                    <div class="control-panel">
+                        <h3>BibTeX Entries</h3>
+                        
+                        <!-- Upload Box -->
+                        <div class="drop-zone" id="bibtex-drop-zone" style="padding: 24px 20px;">
+                            <i data-lucide="upload-cloud" class="upload-icon" style="width: 32px; height: 32px;"></i>
+                            <p class="drop-text-primary" style="font-size: 0.9rem;">Drag & drop your .bib file</p>
+                            <input type="file" id="bibtex-file-input" accept=".bib, text/plain" style="display: none;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-select-bibtex">Browse File</button>
+                        </div>
+
+                        <!-- Direct Paste Area -->
+                        <div class="form-group flex-grow">
+                            <label for="bibtex-raw-input">Raw BibTeX Content</label>
+                            <textarea id="bibtex-raw-input" class="monospaced-textarea" style="height: 220px;" placeholder="Paste BibTeX citation blocks here...&#10;@article{key,&#10;  title = {A Title},&#10;  ...&#10;}"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <button id="btn-clean-bibtex" class="btn btn-primary">
+                                <i data-lucide="sparkles"></i> Clean BibTeX Citation
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Clean-up Options & Output -->
+                    <div class="preview-panel">
+                        <h3>Cleaner Parameters</h3>
+                        
+                        <div class="checkbox-options-grid">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bib-opt-strip-abstract" checked>
+                                <span>Strip Abstract / Summary</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bib-opt-strip-keywords" checked>
+                                <span>Strip Keywords</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bib-opt-strip-extras" checked>
+                                <span>Strip Redundant Extras (file, note, epub, url, issn)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bib-opt-keep-doi" checked>
+                                <span>Always Keep DOI</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bib-opt-wrap-titles" checked>
+                                <span>Wrap Capitalized Title Words in Braces (e.g. {CNN})</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bib-opt-dedup" checked>
+                                <span>Deduplicate Entries (by title or DOI)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group flex-grow">
+                            <label for="bibtex-clean-output">Clean Output</label>
+                            <textarea id="bibtex-clean-output" class="monospaced-textarea" style="height: 220px;" readonly placeholder="Cleaned output appears here..."></textarea>
+                        </div>
+
+                        <div class="btn-group">
+                            <button id="btn-copy-bibtex" class="btn btn-secondary" disabled>
+                                <i data-lucide="copy"></i> Copy Output
+                            </button>
+                            <button id="btn-download-bibtex" class="btn btn-primary" disabled>
+                                <i data-lucide="download"></i> Download .bib
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: LLM Toolkits -->
+            <section id="screen-llm" class="screen-content">
+                <!-- Navigation Tabs inside LLM View -->
+                <div class="tab-bar">
+                    <button class="tab-btn active" id="btn-tab-llm-tester">
+                        <i data-lucide="zap"></i> Server Connection Tester
+                    </button>
+                    <button class="tab-btn" id="btn-tab-llm-fixer">
+                        <i data-lucide="braces"></i> JSON Output Fixer
+                    </button>
+                </div>
+
+                <!-- LLM Sub-View: Server Tester -->
+                <div id="llm-subview-tester" class="subview-content active">
+                    <div class="two-column-layout">
+                        <!-- Controls Card -->
+                        <div class="control-panel">
+                            <h3>Connection Configuration</h3>
+                            
+                            <div class="form-group">
+                                <label>Preset Server Type</label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="llm-preset" value="ollama" checked>
+                                        <span>Ollama (Local)</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="llm-preset" value="openai">
+                                        <span>OpenAI / Compatible</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="llm-preset" value="custom">
+                                        <span>Custom Endpoint</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="llm-url">API Endpoint Base URL</label>
+                                <input type="url" id="llm-url" value="http://localhost:11434" placeholder="e.g. http://localhost:11434">
+                            </div>
+
+                            <div class="form-group id-apikey-group hidden" id="apikey-wrapper">
+                                <label for="llm-key">API Key (Optional)</label>
+                                <input type="password" id="llm-key" placeholder="Enter API key if required">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="llm-test-model">Model Name (Optional)</label>
+                                <input type="text" id="llm-test-model" placeholder="e.g., llama3, gpt-4o, leaving blank queries active model">
+                            </div>
+
+                            <div class="form-group">
+                                <button id="btn-test-llm" class="btn btn-primary">
+                                    <i data-lucide="zap"></i> Run Connection Test
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Results Card -->
+                        <div class="preview-panel">
+                            <h3>Status Results</h3>
+                            
+                            <div class="status-summary-card status-neutral" id="llm-status-card">
+                                <div class="status-icon" id="llm-status-icon-wrapper">
+                                    <i data-lucide="help-circle" id="llm-status-icon"></i>
+                                </div>
+                                <div class="status-meta">
+                                    <div class="status-title" id="llm-status-title">Not Tested Yet</div>
+                                    <div class="status-subtitle" id="llm-status-latency">Trigger a test to check connectivity</div>
+                                </div>
+                            </div>
+
+                            <div class="results-accordion">
+                                <div class="accordion-item open">
+                                    <div class="accordion-header">
+                                        <span>Response Logs</span>
+                                        <i data-lucide="chevron-down"></i>
+                                    </div>
+                                    <div class="accordion-content">
+                                        <pre class="console-log" id="llm-log-output">Console ready. Running a test will output communication logs here...</pre>
+                                    </div>
+                                </div>
+
+                                <div class="accordion-item">
+                                    <div class="accordion-header">
+                                        <span>Available Models</span>
+                                        <i data-lucide="chevron-down"></i>
+                                    </div>
+                                    <div class="accordion-content">
+                                        <ul class="model-list" id="llm-model-list">
+                                            <li class="empty-list-item">Run a successful test to retrieve available models.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cors-tip hidden" id="cors-help-tip">
+                                <div class="tip-header">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <strong>Got a Connection / CORS Error?</strong>
+                                </div>
+                                <div class="tip-body">
+                                    <p>Browsers restrict requests to different ports/domains (CORS). If connecting to local Ollama:</p>
+                                    <ul>
+                                        <li><strong>macOS:</strong> Run <code>launchctl setenv OLLAMA_ORIGINS "*"</code> in terminal, then restart Ollama.</li>
+                                        <li><strong>Windows:</strong> Close Ollama from system tray, run <code>set OLLAMA_ORIGINS=*</code> in cmd, then launch <code>ollama serve</code>.</li>
+                                        <li><strong>Linux:</strong> Run <code>systemctl edit ollama.service</code>, add <code>Environment="OLLAMA_ORIGINS=*"</code>, then run <code>systemctl daemon-reload && systemctl restart ollama</code>.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LLM Sub-View: JSON Fixer -->
+                <div id="llm-subview-fixer" class="subview-content">
+                    <div class="two-column-layout">
+                        <!-- Malformed JSON Input -->
+                        <div class="control-panel">
+                            <h3>Malformed or Truncated JSON</h3>
+                            <p class="instruction-text">Paste the broken or truncated JSON generated by the LLM (e.g. quotes unclosed, missing terminal brackets).</p>
+                            <div class="form-group flex-grow">
+                                <textarea id="json-raw-input" class="monospaced-textarea" style="height: 300px;" placeholder='{&#10;  "model": "llama3",&#10;  "results": [&#10;    {"id": 1, "summary": "incomplete...'></textarea>
+                            </div>
+                            <div class="btn-group">
+                                <button id="btn-fix-json" class="btn btn-primary">
+                                    <i data-lucide="wrench"></i> Auto-Fix and Format JSON
+                                </button>
+                                <button id="btn-clear-json-input" class="btn btn-secondary btn-sm">Clear</button>
+                            </div>
+                        </div>
+
+                        <!-- Fixed JSON Output -->
+                        <div class="preview-panel">
+                            <h3>Repaired JSON Output</h3>
+                            <p class="instruction-text">View the structurally repaired and formatted JSON object below.</p>
+                            <div class="form-group flex-grow">
+                                <textarea id="json-clean-output" class="monospaced-textarea" style="height: 300px;" readonly placeholder="Cleaned, valid JSON will be output here..."></textarea>
+                            </div>
+                            <div class="btn-group">
+                                <button id="btn-copy-json" class="btn btn-primary" disabled>
+                                    <i data-lucide="copy"></i> Copy Cleaned JSON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Main JavaScript Logic -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

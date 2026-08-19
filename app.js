@@ -1534,6 +1534,7 @@ function initLLMTester() {
     }
 
     function renderModelsList(models) {
+        populateChatModels(models);
         if (!models || models.length === 0) {
             modelList.innerHTML = `<li class="empty-list-item">No models found in active server configuration.</li>`;
             return;
@@ -1554,6 +1555,207 @@ function initLLMTester() {
             li.appendChild(tagSpan);
             modelList.appendChild(li);
         });
+    }
+
+    // ----------------------------------------------------------------------
+    // Interactive Chat Test
+    // ----------------------------------------------------------------------
+    const chatModelSelect = document.getElementById('llm-chat-model');
+    const chatTranscript = document.getElementById('llm-chat-transcript');
+    const chatEmptyState = document.getElementById('llm-chat-empty');
+    const chatInput = document.getElementById('llm-chat-input');
+    const btnSendChat = document.getElementById('btn-send-chat');
+    const btnClearChat = document.getElementById('btn-clear-chat');
+    const chatStatus = document.getElementById('llm-chat-status');
+
+    let chatHistory = [];
+    let chatBusy = false;
+
+    btnSendChat.addEventListener('click', () => sendChatMessage());
+
+    btnClearChat.addEventListener('click', () => {
+        chatHistory = [];
+        chatTranscript.innerHTML = '';
+        chatTranscript.appendChild(chatEmptyState);
+        setChatStatus('Conversation cleared. Send a new message to test again.');
+        lucide.createIcons();
+    });
+
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+        }
+    });
+
+    function setChatStatus(text) {
+        chatStatus.textContent = text;
+    }
+
+    function populateChatModels(models) {
+        const previous = chatModelSelect.value;
+        chatModelSelect.innerHTML = '<option value="">Use model from configuration</option>';
+        (models || []).forEach(model => {
+            const name = model.name || model.id;
+            if (!name) return;
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            chatModelSelect.appendChild(opt);
+        });
+        if (previous && Array.from(chatModelSelect.options).some(o => o.value === previous)) {
+            chatModelSelect.value = previous;
+        }
+    }
+
+    function appendChatMessage(role, content) {
+        if (chatEmptyState.parentNode === chatTranscript) {
+            chatTranscript.removeChild(chatEmptyState);
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `chat-message chat-${role}`;
+
+        const header = document.createElement('div');
+        header.className = 'chat-message-role';
+        header.textContent = role === 'user' ? 'You' : 'Assistant';
+
+        const body = document.createElement('div');
+        body.className = 'chat-message-body';
+        body.textContent = content;
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(body);
+        chatTranscript.appendChild(wrapper);
+        chatTranscript.scrollTop = chatTranscript.scrollHeight;
+        return wrapper;
+    }
+
+    async function sendChatMessage() {
+        if (chatBusy) return;
+
+        const prompt = chatInput.value.trim();
+        if (!prompt) {
+            setChatStatus('Type a message before sending.');
+            return;
+        }
+
+        const selectedPreset = document.querySelector('input[name="llm-preset"]:checked').value;
+        const baseUrl = urlInput.value.trim().replace(/\/+$/, '');
+        const apiKey = apikeyInput.value.trim();
+        const model = chatModelSelect.value.trim() || modelInput.value.trim();
+
+        if (!baseUrl) {
+            setChatStatus('Specify an API endpoint base URL in the configuration panel first.');
+            return;
+        }
+        if (!model) {
+            setChatStatus('No model selected. Pick one from the dropdown, or type a model name in the configuration panel.');
+            return;
+        }
+
+        const isOllama = selectedPreset === 'ollama';
+        const chatUrl = isOllama ? `${baseUrl}/api/chat` : `${baseUrl}/chat/completions`;
+
+        chatHistory.push({ role: 'user', content: prompt });
+        appendChatMessage('user', prompt);
+        chatInput.value = '';
+
+        chatBusy = true;
+        btnSendChat.disabled = true;
+        btnSendChat.innerHTML = `<i data-lucide="loader" class="animate-spin"></i> Sending...`;
+        lucide.createIcons();
+
+        const pending = appendChatMessage('assistant', 'Waiting for response...');
+        const pendingBody = pending.querySelector('.chat-message-body');
+        const pendingRole = pending.querySelector('.chat-message-role');
+        setChatStatus(`POST ${chatUrl} (model: ${model})`);
+
+        const startTime = performance.now();
+
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            const payload = { model: model, messages: chatHistory, stream: false };
+
+            let rawBody, statusCode, ok, latency;
+            const isTauri = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+
+            if (isTauri) {
+                const invoke = window.__TAURI__.core.invoke;
+                const res = await invoke('test_llm_connection', {
+                    url: chatUrl,
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+                rawBody = res.body;
+                statusCode = res.status_code;
+                ok = res.success;
+                latency = res.latency_ms;
+            } else {
+                const response = await fetch(chatUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    mode: 'cors',
+                    body: JSON.stringify(payload)
+                });
+                rawBody = await response.text();
+                statusCode = response.status;
+                ok = response.ok;
+                latency = Math.round(performance.now() - startTime);
+            }
+
+            if (!ok) {
+                throw new Error(`Server returned HTTP ${statusCode}: ${rawBody.slice(0, 400)}`);
+            }
+
+            const data = JSON.parse(rawBody);
+            let reply = '';
+            if (isOllama) {
+                reply = (data.message && data.message.content) || '';
+            } else {
+                const choice = (data.choices || [])[0] || {};
+                reply = (choice.message && choice.message.content) || choice.text || '';
+            }
+
+            if (!reply) {
+                reply = `[No message content in response]\n${rawBody.slice(0, 800)}`;
+            }
+
+            chatHistory.push({ role: 'assistant', content: reply });
+            pendingBody.textContent = reply;
+
+            const meta = document.createElement('span');
+            meta.className = 'chat-message-meta';
+            meta.textContent = `${model} · ${latency}ms`;
+            pendingRole.appendChild(meta);
+
+            setChatStatus(`Response received in ${latency}ms (HTTP ${statusCode}).`);
+        } catch (error) {
+            const totalTime = Math.round(performance.now() - startTime);
+            pending.classList.remove('chat-assistant');
+            pending.classList.add('chat-error');
+            pendingRole.textContent = 'Error';
+            pendingBody.textContent = error.message || String(error);
+            setChatStatus(`Request failed after ${totalTime}ms.`);
+
+            // Drop the unanswered turn so a retry does not stack duplicate prompts.
+            chatHistory.pop();
+
+            if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+                corsTip.classList.remove('hidden');
+            }
+        } finally {
+            chatBusy = false;
+            btnSendChat.disabled = false;
+            btnSendChat.innerHTML = `<i data-lucide="send"></i> Send`;
+            lucide.createIcons();
+            chatTranscript.scrollTop = chatTranscript.scrollHeight;
+        }
     }
 }
 

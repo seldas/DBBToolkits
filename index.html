@@ -585,6 +585,37 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Interactive Chat Test -->
+                    <div class="chat-test-panel">
+                        <div class="chat-panel-header">
+                            <h3>Interactive Chat Test</h3>
+                            <div class="chat-header-controls">
+                                <select id="llm-chat-model" class="chat-model-select">
+                                    <option value="">Use model from configuration</option>
+                                </select>
+                                <button id="btn-clear-chat" class="btn btn-secondary btn-sm">
+                                    <i data-lucide="trash-2"></i> Clear Chat
+                                </button>
+                            </div>
+                        </div>
+                        <p class="instruction-text">Send real prompts to the configured endpoint to verify the model actually responds. Conversation history is kept in this session and sent with every request.</p>
+
+                        <div class="chat-transcript" id="llm-chat-transcript">
+                            <div class="chat-empty-state" id="llm-chat-empty">
+                                <i data-lucide="message-square"></i>
+                                <span>No messages yet. Type a prompt below to test the model.</span>
+                            </div>
+                        </div>
+
+                        <div class="chat-composer">
+                            <textarea id="llm-chat-input" class="chat-input" rows="2" placeholder="Type a test message, then press Enter to send (Shift+Enter for a new line)..."></textarea>
+                            <button id="btn-send-chat" class="btn btn-primary chat-send-btn">
+                                <i data-lucide="send"></i> Send
+                            </button>
+                        </div>
+                        <div class="chat-status-line" id="llm-chat-status">Idle. Configure the endpoint above and send a message.</div>
+                    </div>
                 </div>
 
                 <!-- LLM Sub-View: JSON Fixer -->

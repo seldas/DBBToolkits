@@ -1,21 +1,22 @@
 # DBBtoolkits — Scientific Research Tool Suite
 
-[![Release](https://img.shields.io/github/v/release/seldas/DBBToolkits?color=blue)](https://github.com/seldas/DBBToolkits/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows-blue)]()
+[![Web App](https://img.shields.io/badge/Web%20App-Live-brightgreen)](https://seldas.github.io/DBBToolkits/)
+[![Platform](https://img.shields.io/badge/platform-Web%20%7C%20Windows%20(Tauri)-blue)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**DBBtoolkits** is a premium, lightweight desktop application containing a suite of high-performance scientific tools designed to streamline daily research workflows. By wrapping a high-performance modern web interface in a native desktop shell using **Tauri v2** and **Rust**, DBBtoolkits operates completely offline and locally, ensuring maximum privacy for your papers, citations, and data.
+**DBBtoolkits** is a lightweight suite of high-performance scientific tools designed to streamline daily research workflows. All tools run **100% client-side in your browser** with zero installation and zero data uploaded to any server—ensuring maximum privacy for your papers, figures, citations, and data. (An optional **Tauri v2** desktop build is also supported for local CORS-free LLM testing.)
 
 ---
 
-## 🚀 Download & Install
+## 🚀 Use Online (No Installation Required)
 
-For standard users on Windows, you can download the pre-compiled version directly:
+Open the live web app directly in any modern browser:
 
-1. Go to the [Latest Releases](https://github.com/seldas/DBBToolkits/releases).
-2. Download the installer:
-   * **`DBBtoolkits_1.1.0_x64-setup.exe`** (Recommended) — A lightweight 3MB installer that sets up the app and creates desktop shortcuts.
-   * **`dbbtoolkits.exe`** — A standalone portable executable that runs immediately without installation.
+👉 **[https://seldas.github.io/DBBToolkits/](https://seldas.github.io/DBBToolkits/)**
+
+* Works on Windows, macOS, and Linux without downloading or installing any executable.
+* All processing (image DPI conversion, BibTeX cleaning, table formatting, diff checking, QR generation) happens locally in your browser memory.
+* **Note on LLM Connection Tester**: When using the web version, target LLM endpoints must allow browser CORS requests. For local/intranet servers without CORS enabled, you can run the desktop build locally (see [Developer Guide](#-developer-guide--local-compilation)).
 
 ---
 
@@ -82,21 +83,22 @@ cd DBBToolkits
 npm install
 ```
 
-To run the application in Tauri desktop development mode with hot-reloading:
+To run or build the **web version**:
+
+```powershell
+# Start web dev server
+npm run dev
+
+# Build static web bundle into dist/
+npm run build
+```
+
+To run or package the optional **Tauri desktop version** locally:
 
 ```powershell
 npm run tauri dev
-```
-
-### Packaging a Release
-
-To compile and package the production installer:
-
-```powershell
 npm run tauri build
 ```
-
-The output installers will be built under [src-tauri/target/release/bundle/nsis/](file:///d:/Coding/DBBToolkits/src-tauri/target/release/bundle/nsis/) (`.exe`) and [src-tauri/target/release/bundle/msi/](file:///d:/Coding/DBBToolkits/src-tauri/target/release/bundle/msi/) (`.msi`).
 
 ---
 

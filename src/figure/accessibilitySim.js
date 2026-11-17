@@ -227,4 +227,6 @@ export function initAccessibilitySim() {
             alert(`Failed to load figure: ${err.message}`);
         }
     }
+
+    return { handleFile };
 }

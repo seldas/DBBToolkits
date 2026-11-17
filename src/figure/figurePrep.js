@@ -10,8 +10,10 @@ import {
     stripJpegMetadata,
     stripPngMetadata,
 } from './dpiMetadata.js';
+import { copyPngToClipboard, flashButtonFeedback } from './figureBridge.js';
+import { refreshIcons } from '../icons.js';
 
-export function initFigurePrep() {
+export function initFigurePrep({ onSendToPanel, onSendToAccessibility } = {}) {
     const dropZone = document.getElementById('dpi-drop-zone');
     const fileInput = document.getElementById('dpi-file-input');
     const btnSelectFile = document.getElementById('btn-select-file');
@@ -19,6 +21,7 @@ export function initFigurePrep() {
     const fileDetails = document.getElementById('file-details');
     const fileDetailsName = document.getElementById('file-details-name');
     const fileDetailsSize = document.getElementById('file-details-size');
+    const batchListEl = document.getElementById('prep-batch-list');
 
     const targetDpiSelect = document.getElementById('target-dpi');
     const stripMetaCheckbox = document.getElementById('prep-strip-metadata');
@@ -28,6 +31,9 @@ export function initFigurePrep() {
     const svgWidthGroup = document.getElementById('prep-svg-width-group');
     const svgWidthInput = document.getElementById('prep-svg-width');
     const btnConvert = document.getElementById('btn-convert-dpi');
+    const btnCopy = document.getElementById('btn-prep-copy');
+    const btnToPanel = document.getElementById('btn-prep-to-panel');
+    const btnToA11y = document.getElementById('btn-prep-to-a11y');
 
     const metaOrigDimensions = document.getElementById('meta-orig-dimensions');
     const metaTargetDimensions = document.getElementById('meta-target-dimensions');
@@ -41,6 +47,7 @@ export function initFigurePrep() {
     const previewImg = document.getElementById('prep-preview-img');
     const previewWrap = document.getElementById('prep-preview-wrap');
 
+    let queuedFiles = [];
     let currentFile = null;
     let fileMetadata = {
         width: 0,
@@ -55,7 +62,8 @@ export function initFigurePrep() {
 
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0]);
+            handleFiles(e.target.files);
+            fileInput.value = '';
         }
     });
 
@@ -77,7 +85,7 @@ export function initFigurePrep() {
 
     dropZone.addEventListener('drop', (e) => {
         if (e.dataTransfer.files.length > 0) {
-            handleFileSelect(e.dataTransfer.files[0]);
+            handleFiles(e.dataTransfer.files);
         }
     });
 
@@ -92,100 +100,229 @@ export function initFigurePrep() {
         el.addEventListener('change', refreshPreviewAndMeta);
     });
 
+    function detectFormat(file) {
+        const lower = file.name.toLowerCase();
+        if (file.type === 'image/svg+xml' || lower.endsWith('.svg')) return 'SVG';
+        if (file.type === 'image/png' || lower.endsWith('.png')) return 'PNG';
+        if (file.type === 'image/jpeg' || file.type === 'image/jpg' || lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'JPEG';
+        if (file.type === 'image/webp' || lower.endsWith('.webp')) return 'WEBP';
+        if (file.type === 'image/tiff' || lower.endsWith('.tif') || lower.endsWith('.tiff')) return 'TIFF';
+        return null;
+    }
+
+    async function processFileToBlob(file, formatHint = null, rawBufferHint = null) {
+        const format = formatHint || detectFormat(file);
+        if (!format || format === 'TIFF') {
+            throw new Error(`Unsupported format for "${file.name}". Please use PNG, JPEG, SVG, or WebP.`);
+        }
+
+        const targetDpi = parseInt(targetDpiSelect.value, 10);
+        const shouldStrip = stripMetaCheckbox.checked;
+        const shouldCrop = autoCropCheckbox.checked;
+        const padding = Math.max(0, parseInt(cropPaddingInput.value, 10) || 0);
+        const svgWidth = Math.max(200, parseInt(svgWidthInput.value, 10) || 2400);
+
+        const isSvg = format === 'SVG';
+        const isWebp = format === 'WEBP';
+
+        let outBlob;
+        let outExt;
+
+        if (!shouldCrop && !isSvg && !isWebp) {
+            let buf = rawBufferHint || await file.arrayBuffer();
+            if (format === 'PNG') {
+                if (shouldStrip) buf = stripPngMetadata(buf).buffer;
+                buf = changePngDpi(buf, targetDpi);
+                outBlob = new Blob([buf], { type: 'image/png' });
+                outExt = '.png';
+            } else if (format === 'JPEG') {
+                if (shouldStrip) buf = stripJpegMetadata(buf).buffer;
+                buf = changeJpegDpi(buf, targetDpi);
+                outBlob = new Blob([buf], { type: 'image/jpeg' });
+                outExt = '.jpg';
+            }
+        } else {
+            let canvas = await fileToCanvas(file, isSvg ? svgWidth : null);
+            if (shouldCrop) {
+                canvas = autoCropCanvas(canvas, padding);
+            }
+            outBlob = await canvasToDpiPngBlob(canvas, targetDpi);
+            outExt = '.png';
+        }
+
+        const dotIdx = file.name.lastIndexOf('.');
+        const baseName = dotIdx !== -1 ? file.name.substring(0, dotIdx) : file.name;
+        return {
+            blob: outBlob,
+            filename: `${baseName}_${targetDpi}dpi${outExt}`,
+        };
+    }
+
+    function triggerDownload(blob, filename) {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    }
+
     btnConvert.addEventListener('click', async () => {
-        if (!currentFile) return;
+        if (queuedFiles.length === 0) return;
 
         btnConvert.disabled = true;
         btnConvert.innerHTML = `<i data-lucide="loader" class="animate-spin"></i> Processing...`;
-        if (window.lucide) window.lucide.createIcons();
+        refreshIcons();
 
         try {
-            const targetDpi = parseInt(targetDpiSelect.value, 10);
-            const shouldStrip = stripMetaCheckbox.checked;
-            const shouldCrop = autoCropCheckbox.checked;
-            const padding = Math.max(0, parseInt(cropPaddingInput.value, 10) || 0);
-            const svgWidth = Math.max(200, parseInt(svgWidthInput.value, 10) || 2400);
-
-            const isSvg = fileMetadata.format === 'SVG';
-            const isWebp = fileMetadata.format === 'WEBP';
-            let outBlob;
-            let outExt;
-
-            if (!shouldCrop && !isSvg && !isWebp) {
-                // Lossless byte-level path for PNG/JPEG
-                let buf = fileMetadata.rawBuffer;
-                if (fileMetadata.format === 'PNG') {
-                    if (shouldStrip) {
-                        buf = stripPngMetadata(buf).buffer;
-                    }
-                    buf = changePngDpi(buf, targetDpi);
-                    outBlob = new Blob([buf], { type: 'image/png' });
-                    outExt = '.png';
-                } else if (fileMetadata.format === 'JPEG') {
-                    if (shouldStrip) {
-                        buf = stripJpegMetadata(buf).buffer;
-                    }
-                    buf = changeJpegDpi(buf, targetDpi);
-                    outBlob = new Blob([buf], { type: 'image/jpeg' });
-                    outExt = '.jpg';
-                } else {
-                    throw new Error('TIFF client-side conversion is restricted. Please use PNG, JPEG, or SVG.');
-                }
+            if (queuedFiles.length === 1) {
+                const { blob, filename } = await processFileToBlob(
+                    currentFile,
+                    fileMetadata.format,
+                    fileMetadata.rawBuffer
+                );
+                triggerDownload(blob, filename);
             } else {
-                // Canvas pipeline (SVG rasterization, Auto-Crop, or WebP -> PNG)
-                let canvas = await fileToCanvas(currentFile, isSvg ? svgWidth : null);
-                if (shouldCrop) {
-                    canvas = autoCropCanvas(canvas, padding);
+                for (let idx = 0; idx < queuedFiles.length; idx++) {
+                    const file = queuedFiles[idx];
+                    const { blob, filename } = await processFileToBlob(file);
+                    triggerDownload(blob, filename);
+                    if (idx < queuedFiles.length - 1) {
+                        await new Promise((r) => setTimeout(r, 140));
+                    }
                 }
-                outBlob = await canvasToDpiPngBlob(canvas, targetDpi);
-                outExt = '.png';
             }
-
-            const origName = currentFile.name;
-            const dotIdx = origName.lastIndexOf('.');
-            const baseName = dotIdx !== -1 ? origName.substring(0, dotIdx) : origName;
-
-            const link = document.createElement('a');
-            link.download = `${baseName}_${targetDpi}dpi${outExt}`;
-            link.href = URL.createObjectURL(outBlob);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
         } catch (err) {
             console.error(err);
             alert(`Error processing figure: ${err.message}`);
         } finally {
             btnConvert.disabled = false;
-            btnConvert.innerHTML = `<i data-lucide="download"></i> Process & Download`;
-            if (window.lucide) window.lucide.createIcons();
+            btnConvert.innerHTML = queuedFiles.length > 1
+                ? `<i data-lucide="download"></i> Process &amp; Download All (${queuedFiles.length})`
+                : `<i data-lucide="download"></i> Process &amp; Download`;
+            refreshIcons();
         }
     });
 
-    async function handleFileSelect(file) {
-        const lower = file.name.toLowerCase();
-        const isSvg = file.type === 'image/svg+xml' || lower.endsWith('.svg');
-        const isPng = file.type === 'image/png' || lower.endsWith('.png');
-        const isJpeg = file.type === 'image/jpeg' || file.type === 'image/jpg' || lower.endsWith('.jpg') || lower.endsWith('.jpeg');
-        const isWebp = file.type === 'image/webp' || lower.endsWith('.webp');
-        const isTiff = file.type === 'image/tiff' || lower.endsWith('.tif') || lower.endsWith('.tiff');
+    btnCopy?.addEventListener('click', async () => {
+        if (!currentFile || queuedFiles.length !== 1) return;
+        try {
+            const { blob } = await processFileToBlob(currentFile, fileMetadata.format, fileMetadata.rawBuffer);
+            await copyPngToClipboard(blob);
+            flashButtonFeedback(btnCopy, `<i data-lucide="check"></i> Copied!`);
+        } catch (err) {
+            console.error(err);
+            alert(`Copy failed: ${err.message}`);
+        }
+    });
 
-        if (!isSvg && !isPng && !isJpeg && !isWebp && !isTiff) {
+    btnToPanel?.addEventListener('click', async () => {
+        if (!currentFile || queuedFiles.length !== 1 || !onSendToPanel) return;
+        try {
+            const { blob, filename } = await processFileToBlob(currentFile, fileMetadata.format, fileMetadata.rawBuffer);
+            const file = new File([blob], filename, { type: blob.type });
+            await onSendToPanel([file]);
+        } catch (err) {
+            console.error(err);
+            alert(`Failed to send to Panel Composer: ${err.message}`);
+        }
+    });
+
+    btnToA11y?.addEventListener('click', async () => {
+        if (!currentFile || queuedFiles.length !== 1 || !onSendToAccessibility) return;
+        try {
+            const { blob, filename } = await processFileToBlob(currentFile, fileMetadata.format, fileMetadata.rawBuffer);
+            const file = new File([blob], filename, { type: blob.type });
+            await onSendToAccessibility(file);
+        } catch (err) {
+            console.error(err);
+            alert(`Failed to send to Accessibility Check: ${err.message}`);
+        }
+    });
+
+    async function handleFiles(fileList) {
+        const validFiles = Array.from(fileList).filter((f) => {
+            const fmt = detectFormat(f);
+            return fmt && fmt !== 'TIFF';
+        });
+
+        if (validFiles.length === 0) {
             alert('Unsupported file format. Please upload PNG, JPEG, SVG, or WebP.');
             return;
         }
 
+        if (validFiles.length === 1) {
+            await handleSingleFile(validFiles[0]);
+            return;
+        }
+
+        // Batch mode (> 1 files)
+        queuedFiles = validFiles;
+        currentFile = null;
+        dropZone.style.display = 'none';
+        fileDetails.classList.remove('hidden');
+        const totalSize = validFiles.reduce((acc, f) => acc + f.size, 0);
+        fileDetailsName.textContent = `${validFiles.length} figures queued (Batch mode)`;
+        fileDetailsSize.textContent = `${formatBytes(totalSize)} total`;
+
+        batchListEl.innerHTML = '';
+        batchListEl.classList.remove('hidden');
+        validFiles.forEach((f, idx) => {
+            const row = document.createElement('div');
+            row.className = 'panel-item-row';
+            row.innerHTML = `
+                <span class="panel-item-badge">#${idx + 1}</span>
+                <span class="panel-item-name" title="${f.name}">${f.name}</span>
+                <span class="panel-item-dim">${formatBytes(f.size)}</span>
+            `;
+            batchListEl.appendChild(row);
+        });
+
+        const hasSvg = validFiles.some((f) => detectFormat(f) === 'SVG');
+        svgWidthGroup.style.display = hasSvg ? 'block' : 'none';
+        previewWrap.classList.add('hidden');
+
+        btnConvert.disabled = false;
+        btnConvert.innerHTML = `<i data-lucide="download"></i> Process &amp; Download All (${validFiles.length})`;
+        if (btnCopy) btnCopy.disabled = true;
+        if (btnToPanel) btnToPanel.disabled = true;
+        if (btnToA11y) btnToA11y.disabled = true;
+
+        const targetDpi = parseInt(targetDpiSelect.value, 10);
+        metaOrigDimensions.textContent = `${validFiles.length} files`;
+        metaTargetDimensions.textContent = 'Batch';
+        metaOrigPrintSize.textContent = '-';
+        metaTargetPrintSize.textContent = '-';
+        metaOrigDpi.textContent = 'Mixed';
+        metaTargetDpi.textContent = `${targetDpi} DPI`;
+        metaOrigFormat.textContent = 'Mixed';
+        metaTargetFormat.textContent = autoCropCheckbox.checked ? 'PNG' : 'Original / PNG';
+        metaStrippedBox.textContent = `Batch ready: ${validFiles.length} figures will be processed with current DPI, metadata strip, and crop settings.`;
+        refreshIcons();
+    }
+
+    async function handleSingleFile(file) {
+        const format = detectFormat(file);
+        if (!format) {
+            alert('Unsupported file format. Please upload PNG, JPEG, SVG, or WebP.');
+            return;
+        }
+
+        queuedFiles = [file];
         currentFile = file;
         dropZone.style.display = 'none';
+        batchListEl.classList.add('hidden');
+        batchListEl.innerHTML = '';
         fileDetails.classList.remove('hidden');
         fileDetailsName.textContent = file.name;
         fileDetailsSize.textContent = formatBytes(file.size);
 
-        const format = isSvg ? 'SVG' : isPng ? 'PNG' : isJpeg ? 'JPEG' : isWebp ? 'WEBP' : 'TIFF';
+        const isSvg = format === 'SVG';
         fileMetadata.format = format;
         svgWidthGroup.style.display = isSvg ? 'block' : 'none';
 
-        if (isTiff) {
+        if (format === 'TIFF') {
             btnConvert.disabled = true;
             alert('TIFF client-side conversion is restricted in browsers. Please export as PNG, JPEG, or SVG.');
             return;
@@ -212,6 +349,12 @@ export function initFigurePrep() {
             fileMetadata.height = canvas.height;
 
             btnConvert.disabled = false;
+            btnConvert.innerHTML = `<i data-lucide="download"></i> Process &amp; Download`;
+            if (btnCopy) btnCopy.disabled = false;
+            if (btnToPanel) btnToPanel.disabled = false;
+            if (btnToA11y) btnToA11y.disabled = false;
+            refreshIcons();
+
             await refreshPreviewAndMeta();
         } catch (err) {
             console.error(err);
@@ -221,6 +364,12 @@ export function initFigurePrep() {
     }
 
     async function refreshPreviewAndMeta() {
+        if (queuedFiles.length > 1) {
+            const targetDpi = parseInt(targetDpiSelect.value, 10);
+            metaTargetDpi.textContent = `${targetDpi} DPI`;
+            metaTargetFormat.textContent = autoCropCheckbox.checked ? 'PNG' : 'Original / PNG';
+            return;
+        }
         if (!currentFile || fileMetadata.format === 'TIFF') return;
 
         const targetDpi = parseInt(targetDpiSelect.value, 10);
@@ -292,10 +441,13 @@ export function initFigurePrep() {
     }
 
     function resetState() {
+        queuedFiles = [];
         currentFile = null;
         fileInput.value = '';
         dropZone.style.display = 'flex';
         fileDetails.classList.add('hidden');
+        batchListEl.classList.add('hidden');
+        batchListEl.innerHTML = '';
         svgWidthGroup.style.display = 'none';
         previewWrap.classList.add('hidden');
         if (previewImg.dataset.objUrl) {
@@ -304,6 +456,10 @@ export function initFigurePrep() {
         }
         previewImg.removeAttribute('src');
         btnConvert.disabled = true;
+        btnConvert.innerHTML = `<i data-lucide="download"></i> Process &amp; Download`;
+        if (btnCopy) btnCopy.disabled = true;
+        if (btnToPanel) btnToPanel.disabled = true;
+        if (btnToA11y) btnToA11y.disabled = true;
 
         metaOrigDimensions.textContent = '-';
         metaTargetDimensions.textContent = '-';
@@ -314,5 +470,8 @@ export function initFigurePrep() {
         metaOrigFormat.textContent = '-';
         metaTargetFormat.textContent = '-';
         metaStrippedBox.textContent = 'Upload a figure to inspect metadata.';
+        refreshIcons();
     }
+
+    return { handleFiles };
 }

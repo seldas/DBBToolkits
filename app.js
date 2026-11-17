@@ -1,28 +1,48 @@
 ﻿import QRCode from 'qrcode';
+import { refreshIcons } from './src/icons.js';
 import { initFigurePrep } from './src/figure/figurePrep.js';
 import { initPanelComposer } from './src/figure/panelComposer.js';
 import { initAccessibilitySim } from './src/figure/accessibilitySim.js';
+import { extractClipboardImageFile } from './src/figure/figureBridge.js';
+import { cleanBibTeX } from './src/writing/bibtexCleaner.js';
 
 /* ==========================================================================
    DBBtoolkits Core Application Logic (Expanded Version)
    ========================================================================== */
 
+let activeScreenId = 'dashboard';
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize core system and utilities
-    lucide.createIcons();
+    refreshIcons();
+    syncAppVersion();
     initNavigation();
     initTheme();
     initAccordions();
-    
+
     // 2. Initialize tools
     initQRGenerator();
-    initFigurePrep();
-    initPanelComposer();
-    initAccessibilitySim();
-    initTableConverter();
+    const a11yApi = initAccessibilitySim();
+    const panelApi = initPanelComposer({
+        onSendToAccessibility: async (file) => {
+            navigateTo('accessibility');
+            await a11yApi.handleFile(file);
+        },
+    });
+    const figurePrepApi = initFigurePrep({
+        onSendToPanel: async (files) => {
+            navigateTo('panel');
+            await panelApi.addFiles(files);
+        },
+        onSendToAccessibility: async (file) => {
+            navigateTo('accessibility');
+            await a11yApi.handleFile(file);
+        },
+    });
+    initImagePasteHandler({ figurePrepApi, panelApi, a11yApi });
+
     initDiffChecker();
     initBibTeXCleaner();
-    initJSONFixer();
 
     if (isTauriRuntime()) {
         const navLlm = document.getElementById('nav-llm');
@@ -32,6 +52,34 @@ document.addEventListener('DOMContentLoaded', () => {
         initLLMTester();
     }
 });
+
+function syncAppVersion() {
+    const el = document.getElementById('app-version');
+    if (el && typeof __APP_VERSION__ !== 'undefined') {
+        el.textContent = `v${__APP_VERSION__}`;
+    }
+}
+
+function initImagePasteHandler({ figurePrepApi, panelApi, a11yApi }) {
+    document.addEventListener('paste', async (e) => {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+        const file = extractClipboardImageFile(e);
+        if (!file) return;
+
+        if (activeScreenId === 'dpi') {
+            e.preventDefault();
+            await figurePrepApi.handleFiles([file]);
+        } else if (activeScreenId === 'panel') {
+            e.preventDefault();
+            await panelApi.addFiles([file]);
+        } else if (activeScreenId === 'accessibility') {
+            e.preventDefault();
+            await a11yApi.handleFile(file);
+        }
+    });
+}
 
 function isTauriRuntime() {
     return typeof window !== 'undefined' && window.__TAURI__ !== undefined;
@@ -61,7 +109,7 @@ function initTheme() {
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
         themeBtn.querySelector('span').textContent = isLight ? 'Dark Mode' : 'Light Mode';
         
-        lucide.createIcons();
+        refreshIcons();
     });
 }
 
@@ -89,10 +137,6 @@ const pages = {
         title: "Colorblind & Grayscale Print Check",
         description: "Simulate Deuteranopia, Protanopia, Tritanopia, and grayscale print appearance locally in your browser."
     },
-    table: {
-        title: "Universal Table Converter",
-        description: "Convert spreadsheets (Excel/CSV/TSV) to Markdown tables, and vice versa, instantly and locally."
-    },
     diff: {
         title: "Local Privacy Diff Checker",
         description: "Compare text versions (abstracts, code, or prompts) safely in your browser without transmitting details."
@@ -101,21 +145,14 @@ const pages = {
         title: "BibTeX Citation Cleaner",
         description: "Clean BibTeX databases, deduplicate records, strip optional keys, and safeguard proper noun capitalization."
     },
-    json: {
-        title: "JSON Output Fixer",
-        description: "Repair malformed, truncated, or unclosed JSON payloads and format them cleanly in your browser."
-    },
     llm: {
         title: "LLM Server Connection Tester",
         description: "Test connectivity, latency, available models, and chat responses on local or LAN LLM servers."
     }
 };
 
-const hiddenScreens = new Set(['table', 'json']);
-
 function isScreenAvailable(screenId) {
     if (!pages[screenId]) return false;
-    if (hiddenScreens.has(screenId)) return false;
     if (screenId === 'llm' && !isTauriRuntime()) return false;
     return true;
 }
@@ -141,6 +178,7 @@ function navigateTo(screenId) {
         screenId = 'dashboard';
     }
 
+    activeScreenId = screenId;
     window.location.hash = screenId;
 
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -157,6 +195,10 @@ function navigateTo(screenId) {
 
     document.getElementById('page-title').textContent = pages[screenId].title;
     document.getElementById('page-description').textContent = pages[screenId].description;
+}
+
+if (typeof window !== 'undefined') {
+    window.navigateTo = navigateTo;
 }
 
 // ==========================================================================
@@ -207,7 +249,7 @@ function initQRGenerator() {
 
         btnGenerate.disabled = true;
         btnGenerate.innerHTML = `<i data-lucide="loader" class="animate-spin"></i> Generating...`;
-        lucide.createIcons();
+        refreshIcons();
 
         setTimeout(() => {
             QRCode.toCanvas(canvas, text, {
@@ -221,7 +263,7 @@ function initQRGenerator() {
             }, (error) => {
                 btnGenerate.disabled = false;
                 btnGenerate.innerHTML = `<i data-lucide="play"></i> Generate QR Code`;
-                lucide.createIcons();
+                refreshIcons();
 
                 if (error) {
                     console.error('QR Gen Error:', error);
@@ -253,119 +295,6 @@ function initQRGenerator() {
 // Scientific Figure DPI Converter
 // ==========================================================================
 // Figure Prep is initialized via ./src/figure/figurePrep.js
-
-// ==========================================================================
-// Universal Table Converter (Excel â‡„ Markdown)
-// ==========================================================================
-function initTableConverter() {
-    const rawInput = document.getElementById('table-raw-input');
-    const mdOutput = document.getElementById('table-md-output');
-    const btnToMd = document.getElementById('btn-table-to-md');
-    const btnToTable = document.getElementById('btn-md-to-table');
-    const btnClear = document.getElementById('btn-clear-table-input');
-    const btnCopy = document.getElementById('btn-copy-table-result');
-
-    btnToMd.addEventListener('click', () => {
-        const text = rawInput.value.trim();
-        if (!text) {
-            alert('Please paste some Excel cells or CSV data first.');
-            return;
-        }
-
-        // Determine delimiter (default to tab since Excel pastes as TSV)
-        let delimiter = '\t';
-        if (!text.includes('\t') && text.includes(',')) {
-            // Fallback to comma if no tabs but commas exist
-            delimiter = ',';
-        }
-
-        const lines = text.split('\n');
-        const rows = lines.map(line => line.split(delimiter).map(cell => cell.trim()));
-
-        // Calculate max string length of each column for visual padding/alignment
-        const colWidths = [];
-        rows.forEach(row => {
-            row.forEach((cell, colIndex) => {
-                const len = cell.length;
-                if (!colWidths[colIndex] || len > colWidths[colIndex]) {
-                    colWidths[colIndex] = len;
-                }
-            });
-        });
-
-        // Ensure columns have a minimum width for the Markdown alignment indicator (at least 3 characters)
-        const paddedWidths = colWidths.map(w => Math.max(w || 0, 3));
-
-        let md = '';
-        rows.forEach((row, rowIndex) => {
-            // Header spacer row
-            if (rowIndex === 1) {
-                md += '|' + paddedWidths.map(w => '-'.repeat(w + 2)).join('|') + '|\n';
-            }
-            
-            const cellStrings = row.map((cell, colIndex) => {
-                const width = paddedWidths[colIndex];
-                return ' ' + cell.padEnd(width) + ' ';
-            });
-
-            // Handle mismatched row columns (pad empty cells if necessary)
-            if (cellStrings.length < paddedWidths.length) {
-                for (let i = cellStrings.length; i < paddedWidths.length; i++) {
-                    cellStrings.push(' '.repeat(paddedWidths[i] + 2));
-                }
-            }
-
-            md += '|' + cellStrings.join('|') + '|\n';
-        });
-
-        mdOutput.value = md.trim();
-    });
-
-    btnToTable.addEventListener('click', () => {
-        const mdText = mdOutput.value.trim();
-        if (!mdText) {
-            alert('Please input a Markdown table first.');
-            return;
-        }
-
-        const lines = mdText.split('\n');
-        const tsvRows = [];
-
-        lines.forEach(line => {
-            const trimmedLine = line.trim();
-            // Skip lines that do not represent rows (must have pipes)
-            if (!trimmedLine.startsWith('|') || !trimmedLine.endsWith('|')) return;
-            // Skip the header separator divider row (contains hyphens or colons only)
-            if (/^[|:\-\s]+$/.test(trimmedLine)) return;
-
-            // Split by pipe and remove outer empty elements
-            const cells = trimmedLine.split('|').slice(1, -1).map(cell => cell.trim());
-            tsvRows.push(cells.join('\t'));
-        });
-
-        rawInput.value = tsvRows.join('\n');
-    });
-
-    btnClear.addEventListener('click', () => {
-        rawInput.value = '';
-        mdOutput.value = '';
-    });
-
-    btnCopy.addEventListener('click', () => {
-        const content = mdOutput.value;
-        if (!content) return;
-        
-        navigator.clipboard.writeText(content).then(() => {
-            const origText = btnCopy.innerHTML;
-            btnCopy.innerHTML = `<i data-lucide="check"></i> Copied!`;
-            lucide.createIcons();
-            setTimeout(() => {
-                btnCopy.innerHTML = origText;
-                lucide.createIcons();
-            }, 2000);
-        });
-    });
-}
 
 // ==========================================================================
 // Local Privacy Diff Checker
@@ -578,10 +507,10 @@ function initBibTeXCleaner() {
         navigator.clipboard.writeText(content).then(() => {
             const origText = btnCopy.innerHTML;
             btnCopy.innerHTML = `<i data-lucide="check"></i> Copied!`;
-            lucide.createIcons();
+            refreshIcons();
             setTimeout(() => {
                 btnCopy.innerHTML = origText;
-                lucide.createIcons();
+                refreshIcons();
             }, 2000);
         });
     });
@@ -599,282 +528,6 @@ function initBibTeXCleaner() {
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
     });
-
-    // ----------------------------------------------------------------------
-    // BibTeX Parsing & Cleaning Algorithm
-    // ----------------------------------------------------------------------
-    function cleanBibTeX(rawText, options) {
-        let entries = [];
-        let i = 0;
-        
-        while (i < rawText.length) {
-            let index = rawText.indexOf('@', i);
-            if (index === -1) break;
-            
-            let openBraceIndex = rawText.indexOf('{', index);
-            if (openBraceIndex === -1) {
-                i = index + 1;
-                continue;
-            }
-            
-            let type = rawText.substring(index + 1, openBraceIndex).trim().toLowerCase();
-            
-            // Handle comments, preamble, macros
-            if (type === 'comment' || type === 'preamble' || type === 'string') {
-                let endBrace = findClosingBrace(rawText, openBraceIndex);
-                if (endBrace !== -1) {
-                    entries.push({ type: type, raw: rawText.substring(index, endBrace + 1), isMeta: true });
-                    i = endBrace + 1;
-                } else {
-                    i = openBraceIndex + 1;
-                }
-                continue;
-            }
-            
-            let endBrace = findClosingBrace(rawText, openBraceIndex);
-            if (endBrace === -1) {
-                i = openBraceIndex + 1;
-                continue;
-            }
-            
-            let entryBody = rawText.substring(openBraceIndex + 1, endBrace);
-            let firstComma = entryBody.indexOf(',');
-            let citationKey = "";
-            let fieldsString = "";
-            
-            if (firstComma !== -1) {
-                citationKey = entryBody.substring(0, firstComma).trim();
-                fieldsString = entryBody.substring(firstComma + 1);
-            } else {
-                citationKey = entryBody.trim();
-            }
-            
-            let fields = parseBibTeXFields(fieldsString);
-            entries.push({
-                type: type,
-                key: citationKey,
-                fields: fields,
-                raw: rawText.substring(index, endBrace + 1)
-            });
-            
-            i = endBrace + 1;
-        }
-
-        // Deduplication
-        if (options.dedup) {
-            let seenKeys = new Set();
-            let seenTitles = new Set();
-            let seenDOIs = new Set();
-            let uniqueEntries = [];
-            
-            for (let entry of entries) {
-                if (entry.isMeta) {
-                    uniqueEntries.push(entry);
-                    continue;
-                }
-                
-                let doi = entry.fields && entry.fields['doi'] ? entry.fields['doi'].toLowerCase().replace(/https?:\/\/doi.org\//, '').trim() : '';
-                let title = entry.fields && entry.fields['title'] ? entry.fields['title'].toLowerCase().replace(/[\{\}]/g, '').replace(/\s+/g, ' ').trim() : '';
-                let key = entry.key ? entry.key.trim() : '';
-                
-                let isDuplicate = false;
-                if (doi && seenDOIs.has(doi)) isDuplicate = true;
-                else if (title && seenTitles.has(title)) isDuplicate = true;
-                else if (key && seenKeys.has(key)) isDuplicate = true;
-                
-                if (!isDuplicate) {
-                    if (doi) seenDOIs.add(doi);
-                    if (title) seenTitles.add(title);
-                    if (key) seenKeys.add(key);
-                    uniqueEntries.push(entry);
-                }
-            }
-            entries = uniqueEntries;
-        }
-        
-        // Re-construct and format BibTeX
-        let outputText = "";
-        for (let entry of entries) {
-            if (entry.isMeta) {
-                outputText += entry.raw + "\n\n";
-                continue;
-            }
-            
-            let cleanedFields = {};
-            for (let key in entry.fields) {
-                let lowKey = key.toLowerCase();
-                
-                if (lowKey === 'abstract' && options.stripAbstract) continue;
-                if (lowKey === 'keywords' && options.stripKeywords) continue;
-                
-                const extraKeys = ['file', 'note', 'epub', 'url', 'issn', 'isbn'];
-                if (extraKeys.includes(lowKey) && options.stripExtras) continue;
-                
-                if (lowKey === 'doi') {
-                    if (options.keepDoi) {
-                        // Keep
-                    } else if (options.stripExtras) {
-                        // Drop if not explicitly keeping and stripping extras
-                        continue;
-                    }
-                }
-                
-                let val = entry.fields[key];
-                if (lowKey === 'title' && options.wrapTitles) {
-                    val = wrapCapitalizedTitleWords(val);
-                }
-                
-                cleanedFields[key] = val;
-            }
-            
-            outputText += `@${entry.type}{${entry.key},\n`;
-            let fieldLines = [];
-            for (let key in cleanedFields) {
-                fieldLines.push(`  ${key} = {${cleanedFields[key]}}`);
-            }
-            outputText += fieldLines.join(",\n");
-            outputText += `\n}\n\n`;
-        }
-        
-        return outputText.trim();
-    }
-
-    function findClosingBrace(text, openBraceIndex) {
-        let braceCount = 1;
-        let inString = false;
-        let escape = false;
-        for (let j = openBraceIndex + 1; j < text.length; j++) {
-            let char = text[j];
-            if (escape) {
-                escape = false;
-                continue;
-            }
-            if (char === '\\') {
-                escape = true;
-                continue;
-            }
-            if (inString) {
-                if (char === '"') inString = false;
-                continue;
-            }
-            if (char === '"') {
-                inString = true;
-                continue;
-            }
-            if (char === '{') {
-                braceCount++;
-            } else if (char === '}') {
-                braceCount--;
-                if (braceCount === 0) {
-                    return j;
-                }
-            }
-        }
-        return -1;
-    }
-
-    function parseBibTeXFields(fieldsString) {
-        let fields = {};
-        let i = 0;
-        while (i < fieldsString.length) {
-            let eq = fieldsString.indexOf('=', i);
-            if (eq === -1) break;
-            
-            let name = fieldsString.substring(i, eq).trim();
-            name = name.replace(/^[\s,]+|[\s,]+$/g, '');
-            if (!name) {
-                i = eq + 1;
-                continue;
-            }
-            
-            let valStart = eq + 1;
-            while (valStart < fieldsString.length && /\s/.test(fieldsString[valStart])) {
-                valStart++;
-            }
-            
-            let value = "";
-            let valEnd = valStart;
-            if (fieldsString[valStart] === '{') {
-                let endBrace = findClosingBrace(fieldsString, valStart);
-                if (endBrace !== -1) {
-                    value = fieldsString.substring(valStart + 1, endBrace);
-                    valEnd = endBrace + 1;
-                } else {
-                    value = fieldsString.substring(valStart + 1);
-                    valEnd = fieldsString.length;
-                }
-            } else if (fieldsString[valStart] === '"') {
-                let inEscape = false;
-                let endQuote = -1;
-                for (let j = valStart + 1; j < fieldsString.length; j++) {
-                    if (inEscape) { inEscape = false; continue; }
-                    if (fieldsString[j] === '\\') { inEscape = true; continue; }
-                    if (fieldsString[j] === '"') { endQuote = j; break; }
-                }
-                if (endQuote !== -1) {
-                    value = fieldsString.substring(valStart + 1, endQuote);
-                    valEnd = endQuote + 1;
-                } else {
-                    value = fieldsString.substring(valStart + 1);
-                    valEnd = fieldsString.length;
-                }
-            } else {
-                let nextComma = fieldsString.indexOf(',', valStart);
-                if (nextComma !== -1) {
-                    value = fieldsString.substring(valStart, nextComma).trim();
-                    valEnd = nextComma + 1;
-                } else {
-                    value = fieldsString.substring(valStart).trim();
-                    valEnd = fieldsString.length;
-                }
-            }
-            
-            value = value.replace(/\s+/g, ' ').trim();
-            fields[name] = value;
-            i = valEnd;
-        }
-        return fields;
-    }
-
-    function wrapCapitalizedTitleWords(title) {
-        let words = title.split(/(\s+)/);
-        let newWords = words.map((word, index) => {
-            let trimmed = word.trim();
-            if (!trimmed) return word;
-            
-            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-                return word;
-            }
-            
-            if (/^[.,\/#!$%\^&\*;:{}=\-_`~()]+$/.test(trimmed)) {
-                return word;
-            }
-            
-            let alphaWord = trimmed.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]+$/g, '');
-            let hasCapitals = false;
-            
-            if (alphaWord.length > 0) {
-                let rest = alphaWord.substring(1);
-                const lowerStopWords = ["A", "An", "The", "And", "But", "Or", "For", "Nor", "On", "In", "At", "To", "By", "Of", "With"];
-                
-                if (index === 0 || index === 2) {
-                    // First word: wrap only if it has capitals beyond the first letter
-                    hasCapitals = /[A-Z]/.test(rest);
-                } else {
-                    let isCapital = /[A-Z]/.test(alphaWord);
-                    let isStopWord = lowerStopWords.includes(alphaWord);
-                    hasCapitals = isCapital && !isStopWord;
-                }
-            }
-            
-            if (hasCapitals) {
-                let trailingPunct = trimmed.substring(alphaWord.length);
-                return `{${alphaWord}}${trailingPunct}`;
-            }
-            return word;
-        });
-        return newWords.join('');
-    }
 }
 
 // ==========================================================================
@@ -941,7 +594,7 @@ function initLLMTester() {
 
         btnTest.disabled = true;
         btnTest.innerHTML = `<i data-lucide="loader" class="animate-spin"></i> Testing Connection...`;
-        lucide.createIcons();
+        refreshIcons();
 
         updateStatusUI('neutral', 'Testing...', 'Connecting to endpoint...');
         logOutput.textContent = `[INFO] Initializing connection test to ${baseUrl}...\n`;
@@ -1091,7 +744,7 @@ function initLLMTester() {
         } finally {
             btnTest.disabled = false;
             btnTest.innerHTML = `<i data-lucide="zap"></i> Run Connection Test`;
-            lucide.createIcons();
+            refreshIcons();
             logOutput.textContent = logText;
         }
     });
@@ -1108,7 +761,7 @@ function initLLMTester() {
         statusIcon.setAttribute('data-lucide', iconName);
         statusTitle.textContent = title;
         statusLatency.textContent = subtitle;
-        lucide.createIcons();
+        refreshIcons();
     }
 
     function renderModelsList(models) {
@@ -1156,7 +809,7 @@ function initLLMTester() {
         chatTranscript.innerHTML = '';
         chatTranscript.appendChild(chatEmptyState);
         setChatStatus('Conversation cleared. Send a new message to test again.');
-        lucide.createIcons();
+        refreshIcons();
     });
 
     chatInput.addEventListener('keydown', (e) => {
@@ -1242,7 +895,7 @@ function initLLMTester() {
         chatBusy = true;
         btnSendChat.disabled = true;
         btnSendChat.innerHTML = `<i data-lucide="loader" class="animate-spin"></i> Sending...`;
-        lucide.createIcons();
+        refreshIcons();
 
         const pending = appendChatMessage('assistant', 'Waiting for response...');
         const pendingBody = pending.querySelector('.chat-message-body');
@@ -1331,172 +984,8 @@ function initLLMTester() {
             chatBusy = false;
             btnSendChat.disabled = false;
             btnSendChat.innerHTML = `<i data-lucide="send"></i> Send`;
-            lucide.createIcons();
+            refreshIcons();
             chatTranscript.scrollTop = chatTranscript.scrollHeight;
-        }
-    }
-}
-
-// ==========================================================================
-// LLM JSON Output Fixer
-// ==========================================================================
-function initJSONFixer() {
-    const rawInput = document.getElementById('json-raw-input');
-    const cleanOutput = document.getElementById('json-clean-output');
-    const btnFix = document.getElementById('btn-fix-json');
-    const btnClear = document.getElementById('btn-clear-json-input');
-    const btnCopy = document.getElementById('btn-copy-json');
-
-    btnFix.addEventListener('click', () => {
-        const rawText = rawInput.value.trim();
-        if (!rawText) {
-            alert('Please paste some JSON output first.');
-            return;
-        }
-
-        const repaired = repairTruncatedJSON(rawText);
-        cleanOutput.value = repaired;
-        btnCopy.disabled = !repaired;
-    });
-
-    btnClear.addEventListener('click', () => {
-        rawInput.value = '';
-        cleanOutput.value = '';
-        btnCopy.disabled = true;
-    });
-
-    btnCopy.addEventListener('click', () => {
-        const content = cleanOutput.value;
-        if (!content) return;
-
-        navigator.clipboard.writeText(content).then(() => {
-            const origText = btnCopy.innerHTML;
-            btnCopy.innerHTML = `<i data-lucide="check"></i> Copied!`;
-            lucide.createIcons();
-            setTimeout(() => {
-                btnCopy.innerHTML = origText;
-                lucide.createIcons();
-            }, 2000);
-        });
-    });
-
-    // ----------------------------------------------------------------------
-    // Smart JSON Output Repair & Format Heuristic
-    // ----------------------------------------------------------------------
-    function repairTruncatedJSON(raw) {
-        let text = raw.trim();
-        if (!text) return "";
-
-        // 1. Close open strings if truncated inside a string value
-        let inString = false;
-        let escape = false;
-        let quoteChar = '"';
-        let stack = [];
-
-        for (let i = 0; i < text.length; i++) {
-            const char = text[i];
-            if (escape) {
-                escape = false;
-                continue;
-            }
-            if (char === '\\') {
-                escape = true;
-                continue;
-            }
-            if (inString) {
-                if (char === quoteChar) {
-                    inString = false;
-                }
-                continue;
-            }
-            if (char === '"' || char === "'") {
-                inString = true;
-                quoteChar = char;
-                continue;
-            }
-            if (char === '{' || char === '[') {
-                stack.push(char);
-            } else if (char === '}') {
-                if (stack[stack.length - 1] === '{') {
-                    stack.pop();
-                }
-            } else if (char === ']') {
-                if (stack[stack.length - 1] === '[') {
-                    stack.pop();
-                }
-            }
-        }
-
-        if (inString) {
-            text += quoteChar;
-        }
-
-        // 2. Remove trailing commas before braces or brackets
-        text = text.replace(/,\s*([}\]])/g, '$1');
-
-        // 3. Balance braces/brackets stack
-        let balanceText = text;
-        const subStack = [...stack];
-        while (subStack.length > 0) {
-            const open = subStack.pop();
-            if (open === '{') balanceText += '}';
-            else if (open === '[') balanceText += ']';
-        }
-
-        // Try direct parsing of balanced text
-        try {
-            const parsed = JSON.parse(balanceText);
-            return JSON.stringify(parsed, null, 2);
-        } catch (e) {
-            // Rollback strategy: if parse fails, truncate back to last valid comma/brace
-            // to throw away unfinished properties/items and re-balance
-            let lastComma = text.lastIndexOf(',');
-            let lastOpenBrace = text.lastIndexOf('{');
-            let lastOpenBracket = text.lastIndexOf('[');
-            let cutoff = Math.max(lastComma, lastOpenBrace, lastOpenBracket);
-
-            if (cutoff > 0) {
-                let rollbackText = text.substring(0, cutoff).trim();
-                if (rollbackText.endsWith(',')) {
-                    rollbackText = rollbackText.substring(0, rollbackText.length - 1).trim();
-                }
-
-                // Recalculate stack for rollback text
-                let newStack = [];
-                let newInString = false;
-                let newEscape = false;
-                for (let i = 0; i < rollbackText.length; i++) {
-                    const char = rollbackText[i];
-                    if (newEscape) { newEscape = false; continue; }
-                    if (char === '\\') { newEscape = true; continue; }
-                    if (newInString) {
-                        if (char === '"') newInString = false;
-                        continue;
-                    }
-                    if (char === '"') { newInString = true; continue; }
-                    if (char === '{' || char === '[') {
-                        newStack.push(char);
-                    } else if (char === '}') {
-                        if (newStack[newStack.length - 1] === '{') newStack.pop();
-                    } else if (char === ']') {
-                        if (newStack[newStack.length - 1] === '[') newStack.pop();
-                    }
-                }
-
-                while (newStack.length > 0) {
-                    const open = newStack.pop();
-                    if (open === '{') rollbackText += '}';
-                    else if (open === '[') rollbackText += ']';
-                }
-
-                try {
-                    const parsed = JSON.parse(rollbackText);
-                    return JSON.stringify(parsed, null, 2);
-                } catch (err) {
-                    return balanceText; // Return first best effort if rollback fails
-                }
-            }
-            return balanceText;
         }
     }
 }

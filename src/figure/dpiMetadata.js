@@ -174,9 +174,9 @@ export function getJpegDpi(buffer) {
         if (marker === 0xFFE0 && length >= 14) {
             const identifier = getAscii(view, offset + 4, 5);
             if (identifier === 'JFIF\0') {
-                const units = view.getUint8(offset + 13);
+                const units = view.getUint8(offset + 11);
                 if (units === 1 || units === 2) {
-                    const xDPI = view.getUint16(offset + 14);
+                    const xDPI = view.getUint16(offset + 12);
                     return units === 1 ? xDPI : Math.round(xDPI * 2.54);
                 }
             }
@@ -214,9 +214,9 @@ export function changeJpegDpi(buffer, targetDpi) {
     if (app0Offset !== -1) {
         const newBuffer = buffer.slice(0);
         const destView = new DataView(newBuffer);
-        destView.setUint8(app0Offset + 13, 1);
+        destView.setUint8(app0Offset + 11, 1);
+        destView.setUint16(app0Offset + 12, targetDpi);
         destView.setUint16(app0Offset + 14, targetDpi);
-        destView.setUint16(app0Offset + 16, targetDpi);
         return newBuffer;
     }
 
@@ -229,18 +229,18 @@ export function changeJpegDpi(buffer, targetDpi) {
     destArr.set(srcArr.subarray(0, 2), 0);
     destView.setUint16(2, 0xFFE0);
     destView.setUint16(4, 16);
-    destView.setUint8(6, 74);
-    destView.setUint8(7, 70);
-    destView.setUint8(8, 73);
-    destView.setUint8(9, 70);
-    destView.setUint8(10, 0);
-    destView.setUint8(11, 1);
-    destView.setUint8(12, 2);
-    destView.setUint8(13, 1);
+    destView.setUint8(6, 74);   // J
+    destView.setUint8(7, 70);   // F
+    destView.setUint8(8, 73);   // I
+    destView.setUint8(9, 70);   // F
+    destView.setUint8(10, 0);   // \0
+    destView.setUint8(11, 1);   // version major
+    destView.setUint8(12, 1);   // version minor
+    destView.setUint8(13, 1);   // units = DPI
     destView.setUint16(14, targetDpi);
     destView.setUint16(16, targetDpi);
-    destView.setUint8(18, 0);
-    destView.setUint8(19, 0);
+    destView.setUint8(18, 0);   // Xthumbnail
+    destView.setUint8(19, 0);   // Ythumbnail
     destArr.set(srcArr.subarray(2), 20);
 
     return newBuffer;

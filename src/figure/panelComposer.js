@@ -1,11 +1,15 @@
 import { canvasToDpiPngBlob, fileToCanvas } from './dpiMetadata.js';
+import { copyPngToClipboard, flashButtonFeedback } from './figureBridge.js';
+import { refreshIcons } from '../icons.js';
 
-export function initPanelComposer() {
+export function initPanelComposer({ onSendToAccessibility } = {}) {
     const dropZone = document.getElementById('panel-drop-zone');
     const fileInput = document.getElementById('panel-file-input');
     const btnBrowse = document.getElementById('btn-panel-browse');
     const btnClear = document.getElementById('btn-panel-clear');
     const btnExport = document.getElementById('btn-panel-export');
+    const btnCopy = document.getElementById('btn-panel-copy');
+    const btnToA11y = document.getElementById('btn-panel-to-a11y');
     const listEl = document.getElementById('panel-file-list');
     const previewCanvas = document.getElementById('panel-preview-canvas');
     const previewEmpty = document.getElementById('panel-preview-empty');
@@ -90,7 +94,35 @@ export function initPanelComposer() {
         } finally {
             btnExport.disabled = panels.length === 0;
             btnExport.innerHTML = `<i data-lucide="download"></i> Export High-Res PNG`;
-            if (window.lucide) window.lucide.createIcons();
+            refreshIcons();
+        }
+    });
+
+    btnCopy?.addEventListener('click', async () => {
+        if (panels.length === 0) return;
+        try {
+            const targetWidth = parseInt(exportWidthSelect.value, 10) || 2400;
+            const outCanvas = buildCompositeCanvas(targetWidth);
+            await copyPngToClipboard(outCanvas);
+            flashButtonFeedback(btnCopy, `<i data-lucide="check"></i> Copied!`);
+        } catch (err) {
+            console.error(err);
+            alert(`Copy failed: ${err.message}`);
+        }
+    });
+
+    btnToA11y?.addEventListener('click', async () => {
+        if (panels.length === 0 || !onSendToAccessibility) return;
+        try {
+            const targetWidth = parseInt(exportWidthSelect.value, 10) || 2400;
+            const targetDpi = parseInt(exportDpiSelect.value, 10) || 300;
+            const outCanvas = buildCompositeCanvas(targetWidth);
+            const blob = await canvasToDpiPngBlob(outCanvas, targetDpi);
+            const file = new File([blob], `figure_panel_${targetDpi}dpi.png`, { type: 'image/png' });
+            await onSendToAccessibility(file);
+        } catch (err) {
+            console.error(err);
+            alert(`Failed to send to Accessibility Check: ${err.message}`);
         }
     });
 
@@ -123,6 +155,8 @@ export function initPanelComposer() {
         listEl.innerHTML = '';
         btnExport.disabled = panels.length === 0;
         btnClear.disabled = panels.length === 0;
+        if (btnCopy) btnCopy.disabled = panels.length === 0;
+        if (btnToA11y) btnToA11y.disabled = panels.length === 0;
 
         panels.forEach((p, idx) => {
             const row = document.createElement('div');
@@ -291,4 +325,6 @@ export function initPanelComposer() {
         const exportH = Math.round((preview.height / preview.width) * targetW);
         previewMeta.textContent = `Export size: ${targetW} × ${exportH} px @ ${targetDpi} DPI (${(targetW / targetDpi).toFixed(2)}" × ${(exportH / targetDpi).toFixed(2)}")`;
     }
+
+    return { addFiles };
 }

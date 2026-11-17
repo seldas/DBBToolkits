@@ -6,12 +6,6 @@
     <title>DBBtoolkits - Scientific Research Tool Suite</title>
     <!-- Meta tags for SEO & Info -->
     <meta name="description" content="DBBtoolkits is a premium suite of small, high-performance scientific tools designed to streamline daily research workflows, featuring figure DPI conversion, BibTeX cleaning, privacy diff checking, and QR code generation.">
-    <!-- Google Fonts: Outfit for headers, Inter for UI text -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Lucide Icons via CDN for modern clean iconography -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Main Style Sheet -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -62,14 +56,6 @@
                 </a>
 
                 <!-- Hidden / Desktop-only -->
-                <a href="#table" class="nav-item" id="nav-table" style="display: none;">
-                    <i data-lucide="table"></i>
-                    <span>Table Converter</span>
-                </a>
-                <a href="#json" class="nav-item" id="nav-json" style="display: none;">
-                    <i data-lucide="braces"></i>
-                    <span>JSON Fixer</span>
-                </a>
                 <a href="#llm" class="nav-item" id="nav-llm" style="display: none;">
                     <i data-lucide="cpu"></i>
                     <span>LLM Tester</span>
@@ -82,7 +68,7 @@
                     <i data-lucide="moon" class="moon-icon"></i>
                     <span>Light Mode</span>
                 </div>
-                <div class="version">v1.1.0</div>
+                <div class="version" id="app-version">v1.1.1</div>
             </div>
         </aside>
 
@@ -172,24 +158,6 @@
                     </div>
 
                     <!-- Hidden / Desktop-only cards -->
-                    <div class="tool-card" id="card-table" onclick="navigateTo('table')" style="display: none;">
-                        <div class="card-icon table-bg">
-                            <i data-lucide="table"></i>
-                        </div>
-                        <h3>Universal Table Converter</h3>
-                        <p>Convert Excel cells, CSV, or TSV data directly into aligned Markdown tables, and vice versa.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-
-                    <div class="tool-card" id="card-json" onclick="navigateTo('json')" style="display: none;">
-                        <div class="card-icon llm-bg">
-                            <i data-lucide="braces"></i>
-                        </div>
-                        <h3>JSON Output Fixer</h3>
-                        <p>Repair broken, truncated, or unclosed JSON payloads and format them cleanly in your browser.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-
                     <div class="tool-card" id="card-llm" onclick="navigateTo('llm')" style="display: none;">
                         <div class="card-icon llm-bg">
                             <i data-lucide="cpu"></i>
@@ -285,10 +253,10 @@
                         
                         <div class="drop-zone" id="dpi-drop-zone">
                             <i data-lucide="upload-cloud" class="upload-icon"></i>
-                            <p class="drop-text-primary">Drag &amp; drop your figure here</p>
-                            <p class="drop-text-secondary">Supports PNG, JPEG, SVG, WebP (Max 50MB)</p>
-                            <input type="file" id="dpi-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" style="display: none;">
-                            <button type="button" class="btn btn-outline btn-sm" id="btn-select-file">Browse File</button>
+                            <p class="drop-text-primary">Drag &amp; drop figure(s) here or Ctrl+V to paste</p>
+                            <p class="drop-text-secondary">Supports PNG, JPEG, SVG, WebP — single or batch</p>
+                            <input type="file" id="dpi-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" multiple style="display: none;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-select-file">Browse File(s)</button>
                         </div>
 
                         <div class="file-details-card hidden" id="file-details">
@@ -297,10 +265,12 @@
                                 <span class="file-name" id="file-details-name">figure.png</span>
                                 <span class="file-size" id="file-details-size">1.2 MB</span>
                             </div>
-                            <button type="button" class="btn-icon btn-danger-icon" id="btn-remove-file">
+                            <button type="button" class="btn-icon btn-danger-icon" id="btn-remove-file" title="Clear selection">
                                 <i data-lucide="trash-2"></i>
                             </button>
                         </div>
+
+                        <div id="prep-batch-list" class="panel-file-list hidden"></div>
 
                         <div class="form-row">
                             <div class="form-group">
@@ -336,9 +306,18 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <div class="btn-group">
                             <button id="btn-convert-dpi" class="btn btn-primary" disabled>
                                 <i data-lucide="download"></i> Process &amp; Download
+                            </button>
+                            <button id="btn-prep-copy" class="btn btn-secondary btn-sm" disabled title="Copy processed image as PNG">
+                                <i data-lucide="copy"></i> Copy PNG
+                            </button>
+                            <button id="btn-prep-to-panel" class="btn btn-secondary btn-sm" disabled title="Send to Panel Composer">
+                                <i data-lucide="layout-grid"></i> To Panel
+                            </button>
+                            <button id="btn-prep-to-a11y" class="btn btn-secondary btn-sm" disabled title="Check Colorblind &amp; Grayscale">
+                                <i data-lucide="eye"></i> Check Colorblind
                             </button>
                         </div>
                     </div>
@@ -397,7 +376,7 @@
                         <h3>Subfigures &amp; Layout</h3>
                         <div class="drop-zone" id="panel-drop-zone">
                             <i data-lucide="images" class="upload-icon"></i>
-                            <p class="drop-text-primary">Drop multiple subfigures here</p>
+                            <p class="drop-text-primary">Drop multiple subfigures here or Ctrl+V to paste</p>
                             <p class="drop-text-secondary">PNG, JPEG, SVG, WebP — add in any order and reorder below</p>
                             <input type="file" id="panel-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" multiple style="display: none;">
                             <button type="button" class="btn btn-outline btn-sm" id="btn-panel-browse">Add Figures</button>
@@ -473,6 +452,12 @@
                             <button id="btn-panel-export" class="btn btn-primary" disabled>
                                 <i data-lucide="download"></i> Export High-Res PNG
                             </button>
+                            <button id="btn-panel-copy" class="btn btn-secondary btn-sm" disabled title="Copy composite PNG to clipboard">
+                                <i data-lucide="copy"></i> Copy PNG
+                            </button>
+                            <button id="btn-panel-to-a11y" class="btn btn-secondary btn-sm" disabled title="Check composite in Colorblind Simulator">
+                                <i data-lucide="eye"></i> Check Colorblind
+                            </button>
                             <button id="btn-panel-clear" class="btn btn-secondary btn-sm" disabled>Clear All</button>
                         </div>
                     </div>
@@ -509,7 +494,7 @@
 
                     <div class="drop-zone" id="a11y-drop-zone">
                         <i data-lucide="eye" class="upload-icon"></i>
-                        <p class="drop-text-primary">Drop your figure here to simulate colorblind &amp; print views</p>
+                        <p class="drop-text-primary">Drop your figure here or Ctrl+V to paste</p>
                         <p class="drop-text-secondary">Supports PNG, JPEG, SVG, WebP — 100% local in-browser</p>
                         <input type="file" id="a11y-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" style="display: none;">
                         <button type="button" class="btn btn-outline btn-sm" id="btn-a11y-browse">Browse Figure</button>
@@ -535,43 +520,6 @@
                         <div class="a11y-card">
                             <div class="a11y-card-title">Grayscale Print <span class="a11y-sub">(Luminance)</span></div>
                             <canvas id="a11y-canvas-grayscale"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Screen: Universal Table Converter -->
-            <section id="screen-table" class="screen-content">
-                <div class="two-column-layout">
-                    <!-- Excel Input Panel -->
-                    <div class="control-panel">
-                        <h3>Excel / CSV Cell Input</h3>
-                        <p class="instruction-text">Paste rows directly from Excel/Google Sheets, or paste raw CSV text.</p>
-                        <div class="form-group flex-grow">
-                            <textarea id="table-raw-input" class="monospaced-textarea" placeholder="Paste data here... (e.g. Column1[Tab]Column2)"></textarea>
-                        </div>
-                        <div class="btn-group">
-                            <button id="btn-table-to-md" class="btn btn-primary">
-                                Convert to Markdown <i data-lucide="chevron-right"></i>
-                            </button>
-                            <button id="btn-clear-table-input" class="btn btn-secondary btn-sm">Clear</button>
-                        </div>
-                    </div>
-
-                    <!-- Markdown Output Panel -->
-                    <div class="preview-panel">
-                        <h3>Markdown Table Output</h3>
-                        <p class="instruction-text">Copy the aligned Markdown table for GitHub, journals, or documentation.</p>
-                        <div class="form-group flex-grow">
-                            <textarea id="table-md-output" class="monospaced-textarea" placeholder="| Col 1 | Col 2 |&#10;|---|---|&#10;| Val 1 | Val 2 |"></textarea>
-                        </div>
-                        <div class="btn-group">
-                            <button id="btn-md-to-table" class="btn btn-secondary">
-                                <i data-lucide="chevron-left"></i> Convert to CSV/Excel
-                            </button>
-                            <button id="btn-copy-table-result" class="btn btn-primary">
-                                <i data-lucide="copy"></i> Copy Output
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -697,40 +645,6 @@
                             </button>
                             <button id="btn-download-bibtex" class="btn btn-primary" disabled>
                                 <i data-lucide="download"></i> Download .bib
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Screen: JSON Output Fixer -->
-            <section id="screen-json" class="screen-content">
-                <div class="two-column-layout">
-                    <!-- Malformed JSON Input -->
-                    <div class="control-panel">
-                        <h3>Malformed or Truncated JSON</h3>
-                        <p class="instruction-text">Paste the broken or truncated JSON (e.g. quotes unclosed, missing terminal brackets).</p>
-                        <div class="form-group flex-grow">
-                            <textarea id="json-raw-input" class="monospaced-textarea" style="height: 300px;" placeholder='{&#10;  "model": "llama3",&#10;  "results": [&#10;    {"id": 1, "summary": "incomplete...'></textarea>
-                        </div>
-                        <div class="btn-group">
-                            <button id="btn-fix-json" class="btn btn-primary">
-                                <i data-lucide="wrench"></i> Auto-Fix and Format JSON
-                            </button>
-                            <button id="btn-clear-json-input" class="btn btn-secondary btn-sm">Clear</button>
-                        </div>
-                    </div>
-
-                    <!-- Fixed JSON Output -->
-                    <div class="preview-panel">
-                        <h3>Repaired JSON Output</h3>
-                        <p class="instruction-text">View the structurally repaired and formatted JSON object below.</p>
-                        <div class="form-group flex-grow">
-                            <textarea id="json-clean-output" class="monospaced-textarea" style="height: 300px;" readonly placeholder="Cleaned, valid JSON will be output here..."></textarea>
-                        </div>
-                        <div class="btn-group">
-                            <button id="btn-copy-json" class="btn btn-primary" disabled>
-                                <i data-lucide="copy"></i> Copy Cleaned JSON
                             </button>
                         </div>
                     </div>

@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
     });
     initImagePasteHandler({ figurePrepApi, panelApi, a11yApi });
+    initLauncher();
 
     initDiffChecker();
     initBibTeXCleaner();
@@ -77,6 +78,144 @@ function initImagePasteHandler({ figurePrepApi, panelApi, a11yApi }) {
         } else if (activeScreenId === 'accessibility') {
             e.preventDefault();
             await a11yApi.handleFile(file);
+        }
+    });
+}
+
+// ==========================================================================
+// Spotlight / Command Launcher Dashboard
+// ==========================================================================
+function initLauncher() {
+    const searchInput = document.getElementById('launcher-search');
+    const listEl = document.getElementById('launcher-list');
+    const emptyEl = document.getElementById('launcher-empty');
+    if (!searchInput || !listEl) return;
+
+    const items = Array.from(listEl.querySelectorAll('.launcher-item'));
+
+    function getVisibleItems() {
+        return items.filter((item) => {
+            if (item.id === 'card-llm' && !isTauriRuntime()) return false;
+            return !item.classList.contains('hidden');
+        });
+    }
+
+    function setSelected(targetItem) {
+        items.forEach((item) => item.classList.remove('selected'));
+        if (targetItem) {
+            targetItem.classList.add('selected');
+            targetItem.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function filterItems() {
+        const q = searchInput.value.trim().toLowerCase();
+        let firstVisible = null;
+        let visibleCount = 0;
+
+        items.forEach((item) => {
+            if (item.id === 'card-llm' && !isTauriRuntime()) {
+                item.classList.add('hidden');
+                return;
+            }
+            const haystack = `${item.textContent} ${item.dataset.keywords || ''}`.toLowerCase();
+            const match = !q || haystack.includes(q);
+            item.classList.toggle('hidden', !match);
+            if (match) {
+                visibleCount++;
+                if (!firstVisible) firstVisible = item;
+            }
+        });
+
+        if (emptyEl) emptyEl.classList.toggle('hidden', visibleCount > 0);
+        setSelected(firstVisible);
+    }
+
+    items.forEach((item) => {
+        item.addEventListener('click', () => {
+            const target = item.dataset.screen;
+            if (target) navigateTo(target);
+        });
+        item.addEventListener('mouseenter', () => setSelected(item));
+    });
+
+    searchInput.addEventListener('input', filterItems);
+
+    searchInput.addEventListener('keydown', (e) => {
+        const visible = getVisibleItems();
+        if (visible.length === 0) return;
+
+        const currentIdx = Math.max(0, visible.findIndex((el) => el.classList.contains('selected')));
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelected(visible[(currentIdx + 1) % visible.length]);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelected(visible[(currentIdx - 1 + visible.length) % visible.length]);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const active = visible[currentIdx];
+            if (active?.dataset.screen) navigateTo(active.dataset.screen);
+        } else if (e.key === 'Escape') {
+            if (searchInput.value) {
+                searchInput.value = '';
+                filterItems();
+            } else {
+                searchInput.blur();
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+K / Cmd+K opens Dashboard command palette from anywhere
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            navigateTo('dashboard');
+            searchInput.focus();
+            searchInput.select();
+            return;
+        }
+
+        const tag = document.activeElement?.tagName;
+        const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+        if (isTyping) return;
+
+        if (e.key === '/') {
+            e.preventDefault();
+            navigateTo('dashboard');
+            searchInput.focus();
+            return;
+        }
+
+        if (activeScreenId === 'dashboard') {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                const visible = getVisibleItems();
+                if (visible.length === 0) return;
+                e.preventDefault();
+                const currentIdx = Math.max(0, visible.findIndex((el) => el.classList.contains('selected')));
+                const nextIdx = e.key === 'ArrowDown'
+                    ? (currentIdx + 1) % visible.length
+                    : (currentIdx - 1 + visible.length) % visible.length;
+                setSelected(visible[nextIdx]);
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                const visible = getVisibleItems();
+                const active = visible.find((el) => el.classList.contains('selected')) || visible[0];
+                if (active?.dataset.screen) {
+                    e.preventDefault();
+                    navigateTo(active.dataset.screen);
+                }
+                return;
+            }
+
+            const matched = items.find((el) => el.dataset.shortcut === e.key && isScreenAvailable(el.dataset.screen));
+            if (matched?.dataset.screen) {
+                e.preventDefault();
+                navigateTo(matched.dataset.screen);
+            }
         }
     });
 }

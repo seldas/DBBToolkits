@@ -82,89 +82,92 @@
                 </div>
             </header>
 
-            <!-- Screen: Dashboard -->
+            <!-- Screen: Dashboard (Spotlight / Command Launcher) -->
             <section id="screen-dashboard" class="screen-content active">
-                <div class="hero-section">
-                    <h2>Accelerate Your Research</h2>
-                    <p>A curated collection of micro-utilities built specifically for scientists and researchers. No uploads to external servers, maximum privacy, and instant results.</p>
-                </div>
-
-                <h3 class="dashboard-section-title">Figure &amp; Image</h3>
-                <div class="tools-grid">
-                    <!-- Figure Card 1: Figure Prep -->
-                    <div class="tool-card" onclick="navigateTo('dpi')">
-                        <div class="card-icon dpi-bg">
-                            <i data-lucide="image"></i>
-                        </div>
-                        <h3>Figure Prep (DPI, Metadata &amp; Crop)</h3>
-                        <p>Convert to 300/600 DPI, strip EXIF/author metadata for double-blind review, auto-crop margins, and rasterize SVG.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                <div class="launcher-shell">
+                    <div class="launcher-search-bar">
+                        <i data-lucide="search" class="launcher-search-icon"></i>
+                        <input type="text" id="launcher-search" placeholder="Filter tools or type a keyword (e.g. dpi, bibtex, diff, qr)..." autocomplete="off">
+                        <kbd class="launcher-kbd">/</kbd>
                     </div>
 
-                    <!-- Figure Card 2: Panel Composer -->
-                    <div class="tool-card" onclick="navigateTo('panel')">
-                        <div class="card-icon table-bg">
-                            <i data-lucide="layout-grid"></i>
-                        </div>
-                        <h3>Figure Panel Composer</h3>
-                        <p>Combine multiple subfigures into aligned grids with automatic (a), (b), (c) labels and export at 300/600 DPI.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    <div class="launcher-list" id="launcher-list" role="listbox" aria-label="Available tools">
+                        <button type="button" class="launcher-item selected" data-screen="dpi" data-shortcut="1" data-keywords="figure prep dpi 300 600 metadata exif crop svg">
+                            <span class="launcher-icon dpi-bg"><i data-lucide="image"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">Figure Prep</span>
+                                <span class="launcher-desc">300/600 DPI conversion, EXIF/metadata strip, auto-crop &amp; SVG rasterize</span>
+                            </span>
+                            <span class="launcher-tag">Figure</span>
+                            <kbd class="launcher-kbd">1</kbd>
+                        </button>
+
+                        <button type="button" class="launcher-item" data-screen="panel" data-shortcut="2" data-keywords="panel composer subfigure grid layout label a b c">
+                            <span class="launcher-icon table-bg"><i data-lucide="layout-grid"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">Panel Composer</span>
+                                <span class="launcher-desc">Arrange subfigures into aligned grids with (a), (b), (c) labels at 300/600 DPI</span>
+                            </span>
+                            <span class="launcher-tag">Figure</span>
+                            <kbd class="launcher-kbd">2</kbd>
+                        </button>
+
+                        <button type="button" class="launcher-item" data-screen="accessibility" data-shortcut="3" data-keywords="accessibility colorblind grayscale print deuteranopia protanopia tritanopia">
+                            <span class="launcher-icon llm-bg"><i data-lucide="eye"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">Accessibility Check</span>
+                                <span class="launcher-desc">Simulate Deuteranopia, Protanopia, Tritanopia &amp; grayscale print side-by-side</span>
+                            </span>
+                            <span class="launcher-tag">Figure</span>
+                            <kbd class="launcher-kbd">3</kbd>
+                        </button>
+
+                        <button type="button" class="launcher-item" data-screen="bibtex" data-shortcut="4" data-keywords="bibtex citation cleaner dedup doi title capitalization">
+                            <span class="launcher-icon bibtex-bg"><i data-lucide="book-open"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">BibTeX Cleaner</span>
+                                <span class="launcher-desc">Strip redundant fields, deduplicate entries &amp; protect title capitalization</span>
+                            </span>
+                            <span class="launcher-tag">Writing</span>
+                            <kbd class="launcher-kbd">4</kbd>
+                        </button>
+
+                        <button type="button" class="launcher-item" data-screen="diff" data-shortcut="5" data-keywords="privacy diff checker compare text abstract prompt">
+                            <span class="launcher-icon diff-bg"><i data-lucide="git-compare"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">Privacy Diff</span>
+                                <span class="launcher-desc">Compare two versions of abstracts, drafts, or prompts 100% locally</span>
+                            </span>
+                            <span class="launcher-tag">Writing</span>
+                            <kbd class="launcher-kbd">5</kbd>
+                        </button>
+
+                        <button type="button" class="launcher-item" data-screen="qrcode" data-shortcut="6" data-keywords="qr code generator png poster link doi">
+                            <span class="launcher-icon qr-bg"><i data-lucide="qr-code"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">QR Generator</span>
+                                <span class="launcher-desc">Generate high-resolution PNG QR codes for papers, posters, and links</span>
+                            </span>
+                            <span class="launcher-tag">Utility</span>
+                            <kbd class="launcher-kbd">6</kbd>
+                        </button>
+
+                        <button type="button" class="launcher-item" id="card-llm" data-screen="llm" data-shortcut="7" data-keywords="llm server tester ollama vllm openai local chat" style="display: none;">
+                            <span class="launcher-icon llm-bg"><i data-lucide="cpu"></i></span>
+                            <span class="launcher-main">
+                                <span class="launcher-title">LLM Server Tester</span>
+                                <span class="launcher-desc">Test connectivity, latency, models &amp; chat on local or LAN LLM servers</span>
+                            </span>
+                            <span class="launcher-tag">Desktop</span>
+                            <kbd class="launcher-kbd">7</kbd>
+                        </button>
                     </div>
 
-                    <!-- Figure Card 3: Accessibility Check -->
-                    <div class="tool-card" onclick="navigateTo('accessibility')">
-                        <div class="card-icon llm-bg">
-                            <i data-lucide="eye"></i>
-                        </div>
-                        <h3>Colorblind &amp; Grayscale Check</h3>
-                        <p>Preview figures under Deuteranopia, Protanopia, Tritanopia, and grayscale print modes locally in-browser.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-                </div>
+                    <div id="launcher-empty" class="launcher-empty hidden">No matching tools found.</div>
 
-                <h3 class="dashboard-section-title">Writing &amp; Citations</h3>
-                <div class="tools-grid">
-                    <!-- Writing Card 1: BibTeX Cleaner -->
-                    <div class="tool-card" onclick="navigateTo('bibtex')">
-                        <div class="card-icon bibtex-bg">
-                            <i data-lucide="book-open"></i>
-                        </div>
-                        <h3>BibTeX Citation Cleaner</h3>
-                        <p>Clean Google Scholar or PubMed exported citations. Removes redundant fields and preserves title capitalization.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-
-                    <!-- Writing Card 2: Diff Checker -->
-                    <div class="tool-card" onclick="navigateTo('diff')">
-                        <div class="card-icon diff-bg">
-                            <i data-lucide="git-compare"></i>
-                        </div>
-                        <h3>Local Privacy Diff Checker</h3>
-                        <p>Compare two versions of an abstract, prompt, or code locally. Computes differences securely in-browser.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-                </div>
-
-                <h3 class="dashboard-section-title">Utilities</h3>
-                <div class="tools-grid">
-                    <!-- Utility Card 1: QR Generator -->
-                    <div class="tool-card" onclick="navigateTo('qrcode')">
-                        <div class="card-icon qr-bg">
-                            <i data-lucide="qr-code"></i>
-                        </div>
-                        <h3>QR Code Generator</h3>
-                        <p>Generate high-quality QR codes for posters, presentations, and paper links with custom branding.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-
-                    <!-- Hidden / Desktop-only cards -->
-                    <div class="tool-card" id="card-llm" onclick="navigateTo('llm')" style="display: none;">
-                        <div class="card-icon llm-bg">
-                            <i data-lucide="cpu"></i>
-                        </div>
-                        <h3>LLM Server Tester</h3>
-                        <p>Verify connection parameters and chat with local or LAN LLM servers (Ollama, vLLM, OpenAI-compatible).</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    <div class="launcher-footer">
+                        <span>100% client-side · Zero uploads</span>
+                        <span><kbd class="launcher-kbd">↑</kbd> <kbd class="launcher-kbd">↓</kbd> Select · <kbd class="launcher-kbd">Enter</kbd> Open · <kbd class="launcher-kbd">1–6</kbd> Quick jump · <kbd class="launcher-kbd">Ctrl+K</kbd> Command palette</span>
                     </div>
                 </div>
             </section>

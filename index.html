@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DBBtoolkits - Scientific Research Tool Suite</title>
     <!-- Meta tags for SEO & Info -->
-    <meta name="description" content="DBBtoolkits is a premium suite of small, high-performance scientific tools designed to streamline daily research workflows, featuring QR code generation, figure DPI conversion, and LLM status testing.">
+    <meta name="description" content="DBBtoolkits is a premium suite of small, high-performance scientific tools designed to streamline daily research workflows, featuring QR code generation, figure DPI conversion, and JSON repair.">
     <!-- Google Fonts: Outfit for headers, Inter for UI text -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,9 +49,13 @@
                     <i data-lucide="book-open"></i>
                     <span>BibTeX Cleaner</span>
                 </a>
-                <a href="#llm" class="nav-item" id="nav-llm">
+                <a href="#json" class="nav-item" id="nav-json">
+                    <i data-lucide="braces"></i>
+                    <span>JSON Fixer</span>
+                </a>
+                <a href="#llm" class="nav-item" id="nav-llm" style="display: none;">
                     <i data-lucide="cpu"></i>
-                    <span>LLM Toolkits</span>
+                    <span>LLM Tester</span>
                 </a>
             </nav>
 
@@ -133,13 +137,23 @@
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
 
-                    <!-- Tool Card 6: LLM Toolkits -->
-                    <div class="tool-card" onclick="navigateTo('llm')">
+                    <!-- Tool Card 6: JSON Output Fixer -->
+                    <div class="tool-card" onclick="navigateTo('json')">
+                        <div class="card-icon llm-bg">
+                            <i data-lucide="braces"></i>
+                        </div>
+                        <h3>JSON Output Fixer</h3>
+                        <p>Repair broken, truncated, or unclosed JSON payloads and format them cleanly in your browser.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Tool Card 7: LLM Server Tester (Tauri Desktop Only) -->
+                    <div class="tool-card" id="card-llm" onclick="navigateTo('llm')" style="display: none;">
                         <div class="card-icon llm-bg">
                             <i data-lucide="cpu"></i>
                         </div>
-                        <h3>LLM Toolkits & JSON Fixer</h3>
-                        <p>Verify connection parameters of local LLM servers (Ollama, vLLM) and repair broken/truncated JSON outputs.</p>
+                        <h3>LLM Server Tester</h3>
+                        <p>Verify connection parameters and chat with local or LAN LLM servers (Ollama, vLLM, OpenAI-compatible).</p>
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
                 </div>
@@ -472,19 +486,42 @@
                 </div>
             </section>
 
-            <!-- Screen: LLM Toolkits -->
-            <section id="screen-llm" class="screen-content">
-                <!-- Navigation Tabs inside LLM View -->
-                <div class="tab-bar">
-                    <button class="tab-btn active" id="btn-tab-llm-tester">
-                        <i data-lucide="zap"></i> Server Connection Tester
-                    </button>
-                    <button class="tab-btn" id="btn-tab-llm-fixer">
-                        <i data-lucide="braces"></i> JSON Output Fixer
-                    </button>
-                </div>
+            <!-- Screen: JSON Output Fixer -->
+            <section id="screen-json" class="screen-content">
+                <div class="two-column-layout">
+                    <!-- Malformed JSON Input -->
+                    <div class="control-panel">
+                        <h3>Malformed or Truncated JSON</h3>
+                        <p class="instruction-text">Paste the broken or truncated JSON (e.g. quotes unclosed, missing terminal brackets).</p>
+                        <div class="form-group flex-grow">
+                            <textarea id="json-raw-input" class="monospaced-textarea" style="height: 300px;" placeholder='{&#10;  "model": "llama3",&#10;  "results": [&#10;    {"id": 1, "summary": "incomplete...'></textarea>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-fix-json" class="btn btn-primary">
+                                <i data-lucide="wrench"></i> Auto-Fix and Format JSON
+                            </button>
+                            <button id="btn-clear-json-input" class="btn btn-secondary btn-sm">Clear</button>
+                        </div>
+                    </div>
 
-                <!-- LLM Sub-View: Server Tester -->
+                    <!-- Fixed JSON Output -->
+                    <div class="preview-panel">
+                        <h3>Repaired JSON Output</h3>
+                        <p class="instruction-text">View the structurally repaired and formatted JSON object below.</p>
+                        <div class="form-group flex-grow">
+                            <textarea id="json-clean-output" class="monospaced-textarea" style="height: 300px;" readonly placeholder="Cleaned, valid JSON will be output here..."></textarea>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-copy-json" class="btn btn-primary" disabled>
+                                <i data-lucide="copy"></i> Copy Cleaned JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: LLM Server Tester (Tauri Desktop Only) -->
+            <section id="screen-llm" class="screen-content">
                 <div id="llm-subview-tester" class="subview-content active">
                     <div class="two-column-layout">
                         <!-- Controls Card -->
@@ -615,40 +652,6 @@
                             </button>
                         </div>
                         <div class="chat-status-line" id="llm-chat-status">Idle. Configure the endpoint above and send a message.</div>
-                    </div>
-                </div>
-
-                <!-- LLM Sub-View: JSON Fixer -->
-                <div id="llm-subview-fixer" class="subview-content">
-                    <div class="two-column-layout">
-                        <!-- Malformed JSON Input -->
-                        <div class="control-panel">
-                            <h3>Malformed or Truncated JSON</h3>
-                            <p class="instruction-text">Paste the broken or truncated JSON generated by the LLM (e.g. quotes unclosed, missing terminal brackets).</p>
-                            <div class="form-group flex-grow">
-                                <textarea id="json-raw-input" class="monospaced-textarea" style="height: 300px;" placeholder='{&#10;  "model": "llama3",&#10;  "results": [&#10;    {"id": 1, "summary": "incomplete...'></textarea>
-                            </div>
-                            <div class="btn-group">
-                                <button id="btn-fix-json" class="btn btn-primary">
-                                    <i data-lucide="wrench"></i> Auto-Fix and Format JSON
-                                </button>
-                                <button id="btn-clear-json-input" class="btn btn-secondary btn-sm">Clear</button>
-                            </div>
-                        </div>
-
-                        <!-- Fixed JSON Output -->
-                        <div class="preview-panel">
-                            <h3>Repaired JSON Output</h3>
-                            <p class="instruction-text">View the structurally repaired and formatted JSON object below.</p>
-                            <div class="form-group flex-grow">
-                                <textarea id="json-clean-output" class="monospaced-textarea" style="height: 300px;" readonly placeholder="Cleaned, valid JSON will be output here..."></textarea>
-                            </div>
-                            <div class="btn-group">
-                                <button id="btn-copy-json" class="btn btn-primary" disabled>
-                                    <i data-lucide="copy"></i> Copy Cleaned JSON
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>

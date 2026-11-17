@@ -17,10 +17,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initTableConverter();
     initDiffChecker();
     initBibTeXCleaner();
-    initLLMTester();
-    initLLMTabs();
     initJSONFixer();
+
+    if (isTauriRuntime()) {
+        const navLlm = document.getElementById('nav-llm');
+        const cardLlm = document.getElementById('card-llm');
+        if (navLlm) navLlm.style.display = '';
+        if (cardLlm) cardLlm.style.display = '';
+        initLLMTester();
+    }
 });
+
+function isTauriRuntime() {
+    return typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+}
 
 // ==========================================================================
 // Theme Management
@@ -78,15 +88,19 @@ const pages = {
         title: "BibTeX Citation Cleaner",
         description: "Clean BibTeX databases, deduplicate records, strip optional keys, and safeguard proper noun capitalization."
     },
+    json: {
+        title: "JSON Output Fixer",
+        description: "Repair malformed, truncated, or unclosed JSON payloads and format them cleanly in your browser."
+    },
     llm: {
-        title: "LLM Research & Development Toolkits",
-        description: "Test and benchmark local/remote Large Language Model API endpoints and repair malformed JSON outputs."
+        title: "LLM Server Connection Tester",
+        description: "Test connectivity, latency, available models, and chat responses on local or LAN LLM servers."
     }
 };
 
 function initNavigation() {
     const hash = window.location.hash.substring(1);
-    if (hash && pages[hash]) {
+    if (hash && pages[hash] && (hash !== 'llm' || isTauriRuntime())) {
         navigateTo(hash);
     }
 
@@ -101,6 +115,9 @@ function initNavigation() {
 
 function navigateTo(screenId) {
     if (!pages[screenId]) return;
+    if (screenId === 'llm' && !isTauriRuntime()) {
+        screenId = 'dashboard';
+    }
 
     window.location.hash = screenId;
 
@@ -1276,31 +1293,7 @@ function initBibTeXCleaner() {
 }
 
 // ==========================================================================
-// LLM Inner Navigation Tabs
-// ==========================================================================
-function initLLMTabs() {
-    const btnTester = document.getElementById('btn-tab-llm-tester');
-    const btnFixer = document.getElementById('btn-tab-llm-fixer');
-    const subviewTester = document.getElementById('llm-subview-tester');
-    const subviewFixer = document.getElementById('llm-subview-fixer');
-
-    btnTester.addEventListener('click', () => {
-        btnTester.classList.add('active');
-        btnFixer.classList.remove('active');
-        subviewTester.classList.add('active');
-        subviewFixer.classList.remove('active');
-    });
-
-    btnFixer.addEventListener('click', () => {
-        btnFixer.classList.add('active');
-        btnTester.classList.remove('active');
-        subviewFixer.classList.add('active');
-        subviewTester.classList.remove('active');
-    });
-}
-
-// ==========================================================================
-// LLM Server Status Tester
+// LLM Server Status Tester (Tauri Desktop Only)
 // ==========================================================================
 function initLLMTester() {
     const radioPreset = document.getElementsByName('llm-preset');

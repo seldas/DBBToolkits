@@ -15,47 +15,34 @@ Open the live web app directly in any modern browser:
 👉 **[https://seldas.github.io/DBBToolkits/](https://seldas.github.io/DBBToolkits/)**
 
 * Works on Windows, macOS, and Linux without downloading or installing any executable.
-* All processing (image DPI conversion, BibTeX cleaning, JSON repair, table formatting, diff checking, QR generation) happens locally in your browser memory.
+* All processing (figure preparation, panel composing, colorblind simulation, BibTeX cleaning, diff checking, QR generation) happens locally in your browser memory.
 * *(Optional)* The **LLM Server Connection Tester** is hidden on the web version due to browser CORS / Mixed Content restrictions and is available when running the local Tauri desktop build (see [Developer Guide](#-developer-guide--local-compilation)).
 
 ---
 
 ## 🛠️ Core Toolkits
 
-DBBtoolkits packs six essential scientific micro-utilities:
+### Figure & Image
+1. **📷 Figure Prep (DPI, Metadata & Crop)**
+   * Converts PNG/JPEG to **72, 150, 300, or 600 DPI** at the byte level (zero re-compression loss).
+   * Strips EXIF, XMP, and PNG text metadata blocks (`tEXt`/`iTXt`/`zTXt`/`eXIf`) for double-blind review safety.
+   * Supports **auto-cropping** whitespace/transparent margins and **SVG rasterization** to high-DPI PNG.
+2. **🧩 Figure Panel Composer**
+   * Combines multiple subfigures into aligned grids (`Auto`, `1×N`, `2×2`, etc.) with customizable spacing and `(a)`, `(b)`, `(c)` labels.
+   * Exports directly as a **300 or 600 DPI** PNG.
+3. **👁️ Colorblind & Grayscale Print Check**
+   * Simulates **Deuteranopia**, **Protanopia**, **Tritanopia**, and **Grayscale Print** side-by-side locally in-browser, with one-click comparison sheet export.
 
-### 1. 📷 Figure DPI Converter
-Prepare figures and images for journal submissions.
-* Rewrites metadata resolution headers directly in-memory.
-* Converts images to **72, 150, 300, or 600 DPI** without resizing or modifying pixel arrays (zero compression quality loss).
-* Supports `PNG`, `JPEG`, and `TIFF`.
+### Writing & Citations
+4. **🔠 BibTeX Citation Cleaner**
+   * Strips redundant fields (`abstract`, `keywords`, `note`, `file`, `epub`, `url`, `issn`) while preserving `DOI`.
+   * Protects capitalized words in title blocks with curly braces (e.g., `{CNN}`, `{GPT-3}`) and removes duplicates.
+5. **🔍 Local Privacy Diff Checker**
+   * Side-by-side line-by-line and word-by-word comparison of abstracts, drafts, or prompts 100% locally.
 
-### 2. 🔠 BibTeX Citation Cleaner
-Clean Google Scholar, PubMed, or citation manager exports for LaTeX.
-* Strips redundant fields (such as `abstract`, `keywords`, `note`, `file`, `epub`, `url`, `issn`) while preserving `DOI`.
-* Automatically wraps capitalized words in title blocks with curly braces (e.g., `{CNN}`, `{GPT-3}`) to prevent LaTeX from rendering them lowercase.
-* Removes duplicate citations.
-
-### 3. 🧱 JSON Output Fixer
-Repair and format malformed or truncated JSON payloads.
-* Automatically repairs broken or truncated JSON (e.g. from LLM outputs) by closing unclosed quotes, objects, and arrays.
-* Formats repaired output cleanly for one-click copying.
-
-### 4. 🧮 Universal Table Converter
-Convert Excel tables to Markdown documentation in seconds.
-* Paste rows copied directly from Excel, CSV, or TSV formats to convert them into formatted, aligned Markdown tables.
-* Easily convert Markdown tables back into tab-separated cells ready to paste back into Excel/Google Sheets.
-
-### 5. 🔍 Local Privacy Diff Checker
-Visually compare text changes.
-* Compare drafts of abstracts, papers, or prompts side-by-side.
-* Offers both line-by-line and word-by-word diff comparisons.
-* 100% client-side computation ensuring secure data handling.
-
-### 6. 📱 QR Code Generator
-Generate clean QR codes for posters, presentations, or papers.
-* Enter URLs (e.g., paper DOIs) and customize dimensions, error correction levels (L, M, Q, H), and foreground/background hex colors.
-* Download as high-resolution PNGs.
+### Utilities
+6. **📱 QR Code Generator**
+   * Generates high-resolution PNG QR codes with customizable dimensions, error correction levels (L, M, Q, H), and colors.
 
 ---
 

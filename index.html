@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DBBtoolkits - Scientific Research Tool Suite</title>
     <!-- Meta tags for SEO & Info -->
-    <meta name="description" content="DBBtoolkits is a premium suite of small, high-performance scientific tools designed to streamline daily research workflows, featuring QR code generation, figure DPI conversion, and JSON repair.">
+    <meta name="description" content="DBBtoolkits is a premium suite of small, high-performance scientific tools designed to streamline daily research workflows, featuring figure DPI conversion, BibTeX cleaning, privacy diff checking, and QR code generation.">
     <!-- Google Fonts: Outfit for headers, Inter for UI text -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,31 +25,48 @@
             </div>
             
             <nav class="nav-menu">
+                <div class="nav-group-label">Overview</div>
                 <a href="#dashboard" class="nav-item active" id="nav-dashboard">
                     <i data-lucide="layout-dashboard"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#qrcode" class="nav-item" id="nav-qrcode">
-                    <i data-lucide="qr-code"></i>
-                    <span>QR Generator</span>
-                </a>
+
+                <div class="nav-group-label">Figure &amp; Image</div>
                 <a href="#dpi" class="nav-item" id="nav-dpi">
                     <i data-lucide="image"></i>
-                    <span>DPI Converter</span>
+                    <span>Figure Prep</span>
                 </a>
-                <a href="#table" class="nav-item" id="nav-table">
-                    <i data-lucide="table"></i>
-                    <span>Table Converter</span>
+                <a href="#panel" class="nav-item" id="nav-panel">
+                    <i data-lucide="layout-grid"></i>
+                    <span>Panel Composer</span>
                 </a>
-                <a href="#diff" class="nav-item" id="nav-diff">
-                    <i data-lucide="git-compare"></i>
-                    <span>Diff Checker</span>
+                <a href="#accessibility" class="nav-item" id="nav-accessibility">
+                    <i data-lucide="eye"></i>
+                    <span>Accessibility Check</span>
                 </a>
+
+                <div class="nav-group-label">Writing &amp; Citations</div>
                 <a href="#bibtex" class="nav-item" id="nav-bibtex">
                     <i data-lucide="book-open"></i>
                     <span>BibTeX Cleaner</span>
                 </a>
-                <a href="#json" class="nav-item" id="nav-json">
+                <a href="#diff" class="nav-item" id="nav-diff">
+                    <i data-lucide="git-compare"></i>
+                    <span>Privacy Diff</span>
+                </a>
+
+                <div class="nav-group-label">Utilities</div>
+                <a href="#qrcode" class="nav-item" id="nav-qrcode">
+                    <i data-lucide="qr-code"></i>
+                    <span>QR Generator</span>
+                </a>
+
+                <!-- Hidden / Desktop-only -->
+                <a href="#table" class="nav-item" id="nav-table" style="display: none;">
+                    <i data-lucide="table"></i>
+                    <span>Table Converter</span>
+                </a>
+                <a href="#json" class="nav-item" id="nav-json" style="display: none;">
                     <i data-lucide="braces"></i>
                     <span>JSON Fixer</span>
                 </a>
@@ -86,48 +103,42 @@
                     <p>A curated collection of micro-utilities built specifically for scientists and researchers. No uploads to external servers, maximum privacy, and instant results.</p>
                 </div>
 
+                <h3 class="dashboard-section-title">Figure &amp; Image</h3>
                 <div class="tools-grid">
-                    <!-- Tool Card 1: QR Generator -->
-                    <div class="tool-card" onclick="navigateTo('qrcode')">
-                        <div class="card-icon qr-bg">
-                            <i data-lucide="qr-code"></i>
-                        </div>
-                        <h3>QR Code Generator</h3>
-                        <p>Generate high-quality vector and raster QR codes for posters, presentations, and paper links with custom branding.</p>
-                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
-                    </div>
-
-                    <!-- Tool Card 2: DPI Converter -->
+                    <!-- Figure Card 1: Figure Prep -->
                     <div class="tool-card" onclick="navigateTo('dpi')">
                         <div class="card-icon dpi-bg">
                             <i data-lucide="image"></i>
                         </div>
-                        <h3>Figure DPI Converter</h3>
-                        <p>Prepare images for journal submissions by converting them to 300 or 600 DPI without altering pixel dimensions or quality.</p>
+                        <h3>Figure Prep (DPI, Metadata &amp; Crop)</h3>
+                        <p>Convert to 300/600 DPI, strip EXIF/author metadata for double-blind review, auto-crop margins, and rasterize SVG.</p>
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
 
-                    <!-- Tool Card 3: Table Converter -->
-                    <div class="tool-card" onclick="navigateTo('table')">
+                    <!-- Figure Card 2: Panel Composer -->
+                    <div class="tool-card" onclick="navigateTo('panel')">
                         <div class="card-icon table-bg">
-                            <i data-lucide="table"></i>
+                            <i data-lucide="layout-grid"></i>
                         </div>
-                        <h3>Universal Table Converter</h3>
-                        <p>Convert Excel cells, CSV, or TSV data directly into aligned Markdown tables, and vice versa.</p>
+                        <h3>Figure Panel Composer</h3>
+                        <p>Combine multiple subfigures into aligned grids with automatic (a), (b), (c) labels and export at 300/600 DPI.</p>
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
 
-                    <!-- Tool Card 4: Diff Checker -->
-                    <div class="tool-card" onclick="navigateTo('diff')">
-                        <div class="card-icon diff-bg">
-                            <i data-lucide="git-compare"></i>
+                    <!-- Figure Card 3: Accessibility Check -->
+                    <div class="tool-card" onclick="navigateTo('accessibility')">
+                        <div class="card-icon llm-bg">
+                            <i data-lucide="eye"></i>
                         </div>
-                        <h3>Local Privacy Diff Checker</h3>
-                        <p>Compare two versions of an abstract, prompt, or code locally. Computes differences securely in-browser.</p>
+                        <h3>Colorblind &amp; Grayscale Check</h3>
+                        <p>Preview figures under Deuteranopia, Protanopia, Tritanopia, and grayscale print modes locally in-browser.</p>
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
+                </div>
 
-                    <!-- Tool Card 5: BibTeX Cleaner -->
+                <h3 class="dashboard-section-title">Writing &amp; Citations</h3>
+                <div class="tools-grid">
+                    <!-- Writing Card 1: BibTeX Cleaner -->
                     <div class="tool-card" onclick="navigateTo('bibtex')">
                         <div class="card-icon bibtex-bg">
                             <i data-lucide="book-open"></i>
@@ -137,8 +148,40 @@
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
 
-                    <!-- Tool Card 6: JSON Output Fixer -->
-                    <div class="tool-card" onclick="navigateTo('json')">
+                    <!-- Writing Card 2: Diff Checker -->
+                    <div class="tool-card" onclick="navigateTo('diff')">
+                        <div class="card-icon diff-bg">
+                            <i data-lucide="git-compare"></i>
+                        </div>
+                        <h3>Local Privacy Diff Checker</h3>
+                        <p>Compare two versions of an abstract, prompt, or code locally. Computes differences securely in-browser.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+                </div>
+
+                <h3 class="dashboard-section-title">Utilities</h3>
+                <div class="tools-grid">
+                    <!-- Utility Card 1: QR Generator -->
+                    <div class="tool-card" onclick="navigateTo('qrcode')">
+                        <div class="card-icon qr-bg">
+                            <i data-lucide="qr-code"></i>
+                        </div>
+                        <h3>QR Code Generator</h3>
+                        <p>Generate high-quality QR codes for posters, presentations, and paper links with custom branding.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <!-- Hidden / Desktop-only cards -->
+                    <div class="tool-card" id="card-table" onclick="navigateTo('table')" style="display: none;">
+                        <div class="card-icon table-bg">
+                            <i data-lucide="table"></i>
+                        </div>
+                        <h3>Universal Table Converter</h3>
+                        <p>Convert Excel cells, CSV, or TSV data directly into aligned Markdown tables, and vice versa.</p>
+                        <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
+                    </div>
+
+                    <div class="tool-card" id="card-json" onclick="navigateTo('json')" style="display: none;">
                         <div class="card-icon llm-bg">
                             <i data-lucide="braces"></i>
                         </div>
@@ -147,7 +190,6 @@
                         <span class="card-action">Launch Tool <i data-lucide="arrow-right"></i></span>
                     </div>
 
-                    <!-- Tool Card 7: LLM Server Tester (Tauri Desktop Only) -->
                     <div class="tool-card" id="card-llm" onclick="navigateTo('llm')" style="display: none;">
                         <div class="card-icon llm-bg">
                             <i data-lucide="cpu"></i>
@@ -234,18 +276,18 @@
                 </div>
             </section>
 
-            <!-- Screen: Figure DPI Converter -->
+            <!-- Screen: Figure Prep (DPI, Metadata Strip, Auto-Crop & SVG) -->
             <section id="screen-dpi" class="screen-content">
                 <div class="two-column-layout">
                     <!-- Controls Card -->
                     <div class="control-panel">
-                        <h3>Conversion Settings</h3>
+                        <h3>Figure Preparation</h3>
                         
                         <div class="drop-zone" id="dpi-drop-zone">
                             <i data-lucide="upload-cloud" class="upload-icon"></i>
-                            <p class="drop-text-primary">Drag & drop your figure here</p>
-                            <p class="drop-text-secondary">Supports PNG, JPEG, TIFF (Max 50MB)</p>
-                            <input type="file" id="dpi-file-input" accept="image/png, image/jpeg, image/tiff" style="display: none;">
+                            <p class="drop-text-primary">Drag &amp; drop your figure here</p>
+                            <p class="drop-text-secondary">Supports PNG, JPEG, SVG, WebP (Max 50MB)</p>
+                            <input type="file" id="dpi-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" style="display: none;">
                             <button type="button" class="btn btn-outline btn-sm" id="btn-select-file">Browse File</button>
                         </div>
 
@@ -270,18 +312,43 @@
                                     <option value="600">600 DPI (High-res Line Art)</option>
                                 </select>
                             </div>
+                            <div class="form-group" id="prep-svg-width-group" style="display: none;">
+                                <label for="prep-svg-width">SVG Raster Width (px)</label>
+                                <input type="number" id="prep-svg-width" value="2400" min="200" max="8000" step="100">
+                            </div>
+                        </div>
+
+                        <div class="checkbox-stack">
+                            <label class="checkbox-row">
+                                <input type="checkbox" id="prep-strip-metadata" checked>
+                                <span>Strip EXIF / author / software metadata (Double-blind safe)</span>
+                            </label>
+                            <label class="checkbox-row">
+                                <input type="checkbox" id="prep-auto-crop">
+                                <span>Auto-crop whitespace / transparent margins</span>
+                            </label>
+                        </div>
+
+                        <div class="form-row" id="prep-crop-options" style="display: none;">
+                            <div class="form-group">
+                                <label for="prep-crop-padding">Crop Margin Padding (px)</label>
+                                <input type="number" id="prep-crop-padding" value="12" min="0" max="200">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <button id="btn-convert-dpi" class="btn btn-primary" disabled>
-                                <i data-lucide="refresh-cw"></i> Convert and Download
+                                <i data-lucide="download"></i> Process &amp; Download
                             </button>
                         </div>
                     </div>
 
                     <!-- Details Card -->
                     <div class="preview-panel">
-                        <h3>Metadata Info</h3>
+                        <h3>Preview &amp; Metadata</h3>
+                        <div class="prep-preview-wrap hidden" id="prep-preview-wrap">
+                            <img id="prep-preview-img" alt="Figure preview">
+                        </div>
                         <div class="metadata-table-container">
                             <table class="metadata-table">
                                 <thead>
@@ -316,8 +383,158 @@
                             </table>
                         </div>
                         <div class="info-alert">
-                            <i data-lucide="info"></i>
-                            <p>This converter rewrites the metadata headers directly in your browser. Pixel colors are unmodified (no compression quality loss), keeping your original scientific figures perfect.</p>
+                            <i data-lucide="shield-check"></i>
+                            <p id="prep-stripped-summary">Upload a figure to inspect metadata. Lossless byte-level processing is used for PNG/JPEG unless Auto-Crop or SVG rasterization is enabled.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: Figure Panel Composer -->
+            <section id="screen-panel" class="screen-content">
+                <div class="two-column-layout">
+                    <div class="control-panel">
+                        <h3>Subfigures &amp; Layout</h3>
+                        <div class="drop-zone" id="panel-drop-zone">
+                            <i data-lucide="images" class="upload-icon"></i>
+                            <p class="drop-text-primary">Drop multiple subfigures here</p>
+                            <p class="drop-text-secondary">PNG, JPEG, SVG, WebP — add in any order and reorder below</p>
+                            <input type="file" id="panel-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" multiple style="display: none;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-panel-browse">Add Figures</button>
+                        </div>
+
+                        <div id="panel-file-list" class="panel-file-list"></div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="panel-cols">Grid Columns</label>
+                                <select id="panel-cols">
+                                    <option value="auto" selected>Auto</option>
+                                    <option value="1">1 Column</option>
+                                    <option value="2">2 Columns</option>
+                                    <option value="3">3 Columns</option>
+                                    <option value="4">4 Columns</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="panel-gap">Gap (px)</label>
+                                <input type="number" id="panel-gap" value="24" min="0" max="150">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="panel-label-style">Panel Labels</label>
+                                <select id="panel-label-style">
+                                    <option value="paren-lower" selected>(a), (b), (c)...</option>
+                                    <option value="lower">a, b, c...</option>
+                                    <option value="paren-upper">(A), (B), (C)...</option>
+                                    <option value="upper">A, B, C...</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="panel-label-pos">Label Position</label>
+                                <select id="panel-label-pos">
+                                    <option value="above" selected>Top-Left Above</option>
+                                    <option value="inside">Top-Left Inside</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="panel-bg">Background</label>
+                                <select id="panel-bg">
+                                    <option value="white" selected>White</option>
+                                    <option value="transparent">Transparent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="panel-export-width">Export Width (px)</label>
+                                <select id="panel-export-width">
+                                    <option value="1800">1800 px (Single/1.5 Col)</option>
+                                    <option value="2400" selected>2400 px (Double Col)</option>
+                                    <option value="3000">3000 px (High-Res)</option>
+                                    <option value="3600">3600 px (Ultra-Res)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="panel-export-dpi">Export DPI</label>
+                                <select id="panel-export-dpi">
+                                    <option value="150">150 DPI</option>
+                                    <option value="300" selected>300 DPI</option>
+                                    <option value="600">600 DPI</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button id="btn-panel-export" class="btn btn-primary" disabled>
+                                <i data-lucide="download"></i> Export High-Res PNG
+                            </button>
+                            <button id="btn-panel-clear" class="btn btn-secondary btn-sm" disabled>Clear All</button>
+                        </div>
+                    </div>
+
+                    <div class="preview-panel">
+                        <h3>Composite Preview</h3>
+                        <p class="instruction-text" id="panel-preview-meta">Add 2 or more figures to preview composite layout.</p>
+                        <div class="panel-preview-box">
+                            <div id="panel-preview-empty" class="panel-preview-empty">
+                                <i data-lucide="layout-grid"></i>
+                                <span>No subfigures added yet</span>
+                            </div>
+                            <canvas id="panel-preview-canvas" class="hidden"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen: Accessibility Check (Colorblind & Grayscale) -->
+            <section id="screen-accessibility" class="screen-content">
+                <div class="control-panel">
+                    <div class="a11y-toolbar">
+                        <div>
+                            <h3>Colorblind &amp; Grayscale Print Simulator</h3>
+                            <p class="instruction-text" id="a11y-file-name">Upload a figure to inspect how it appears under common color vision deficiencies and grayscale printing.</p>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-a11y-download" class="btn btn-primary btn-sm" disabled>
+                                <i data-lucide="download"></i> Download Comparison Sheet
+                            </button>
+                            <button id="btn-a11y-reset" class="btn btn-secondary btn-sm">Change Figure</button>
+                        </div>
+                    </div>
+
+                    <div class="drop-zone" id="a11y-drop-zone">
+                        <i data-lucide="eye" class="upload-icon"></i>
+                        <p class="drop-text-primary">Drop your figure here to simulate colorblind &amp; print views</p>
+                        <p class="drop-text-secondary">Supports PNG, JPEG, SVG, WebP — 100% local in-browser</p>
+                        <input type="file" id="a11y-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, .svg" style="display: none;">
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-a11y-browse">Browse Figure</button>
+                    </div>
+
+                    <div id="a11y-results" class="a11y-grid hidden">
+                        <div class="a11y-card">
+                            <div class="a11y-card-title">Original</div>
+                            <canvas id="a11y-canvas-original"></canvas>
+                        </div>
+                        <div class="a11y-card">
+                            <div class="a11y-card-title">Deuteranopia <span class="a11y-sub">(Red-Green, most common)</span></div>
+                            <canvas id="a11y-canvas-deuteranopia"></canvas>
+                        </div>
+                        <div class="a11y-card">
+                            <div class="a11y-card-title">Protanopia <span class="a11y-sub">(Red-Weak)</span></div>
+                            <canvas id="a11y-canvas-protanopia"></canvas>
+                        </div>
+                        <div class="a11y-card">
+                            <div class="a11y-card-title">Tritanopia <span class="a11y-sub">(Blue-Yellow)</span></div>
+                            <canvas id="a11y-canvas-tritanopia"></canvas>
+                        </div>
+                        <div class="a11y-card">
+                            <div class="a11y-card-title">Grayscale Print <span class="a11y-sub">(Luminance)</span></div>
+                            <canvas id="a11y-canvas-grayscale"></canvas>
                         </div>
                     </div>
                 </div>

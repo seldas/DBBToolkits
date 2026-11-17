@@ -1,4 +1,7 @@
-import QRCode from 'qrcode';
+﻿import QRCode from 'qrcode';
+import { initFigurePrep } from './src/figure/figurePrep.js';
+import { initPanelComposer } from './src/figure/panelComposer.js';
+import { initAccessibilitySim } from './src/figure/accessibilitySim.js';
 
 /* ==========================================================================
    DBBtoolkits Core Application Logic (Expanded Version)
@@ -13,7 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 2. Initialize tools
     initQRGenerator();
-    initDPIConverter();
+    initFigurePrep();
+    initPanelComposer();
+    initAccessibilitySim();
     initTableConverter();
     initDiffChecker();
     initBibTeXCleaner();
@@ -73,8 +78,16 @@ const pages = {
         description: "Generate high-resolution QR codes with custom styling for your papers, posters, and web links."
     },
     dpi: {
-        title: "Scientific Figure DPI Converter",
-        description: "Set the physical print resolution (DPI) of your figures to meet journal publication standards."
+        title: "Figure Prep (DPI, Metadata & Crop)",
+        description: "Set 300/600 DPI, strip EXIF/author metadata for double-blind review, auto-crop margins, and rasterize SVG."
+    },
+    panel: {
+        title: "Figure Panel Composer",
+        description: "Arrange multiple subfigures into clean grids with (a), (b), (c) labels and export at 300/600 DPI."
+    },
+    accessibility: {
+        title: "Colorblind & Grayscale Print Check",
+        description: "Simulate Deuteranopia, Protanopia, Tritanopia, and grayscale print appearance locally in your browser."
     },
     table: {
         title: "Universal Table Converter",
@@ -98,9 +111,18 @@ const pages = {
     }
 };
 
+const hiddenScreens = new Set(['table', 'json']);
+
+function isScreenAvailable(screenId) {
+    if (!pages[screenId]) return false;
+    if (hiddenScreens.has(screenId)) return false;
+    if (screenId === 'llm' && !isTauriRuntime()) return false;
+    return true;
+}
+
 function initNavigation() {
     const hash = window.location.hash.substring(1);
-    if (hash && pages[hash] && (hash !== 'llm' || isTauriRuntime())) {
+    if (hash && isScreenAvailable(hash)) {
         navigateTo(hash);
     }
 
@@ -115,7 +137,7 @@ function initNavigation() {
 
 function navigateTo(screenId) {
     if (!pages[screenId]) return;
-    if (screenId === 'llm' && !isTauriRuntime()) {
+    if (!isScreenAvailable(screenId)) {
         screenId = 'dashboard';
     }
 
@@ -230,447 +252,10 @@ function initQRGenerator() {
 // ==========================================================================
 // Scientific Figure DPI Converter
 // ==========================================================================
-function initDPIConverter() {
-    const dropZone = document.getElementById('dpi-drop-zone');
-    const fileInput = document.getElementById('dpi-file-input');
-    const btnSelectFile = document.getElementById('btn-select-file');
-    const btnRemoveFile = document.getElementById('btn-remove-file');
-    const fileDetails = document.getElementById('file-details');
-    const fileDetailsName = document.getElementById('file-details-name');
-    const fileDetailsSize = document.getElementById('file-details-size');
-    const targetDpiSelect = document.getElementById('target-dpi');
-    const btnConvert = document.getElementById('btn-convert-dpi');
-
-    const metaOrigDimensions = document.getElementById('meta-orig-dimensions');
-    const metaTargetDimensions = document.getElementById('meta-target-dimensions');
-    const metaOrigPrintSize = document.getElementById('meta-orig-print-size');
-    const metaTargetPrintSize = document.getElementById('meta-target-print-size');
-    const metaOrigDpi = document.getElementById('meta-orig-dpi');
-    const metaTargetDpi = document.getElementById('meta-target-dpi');
-    const metaOrigFormat = document.getElementById('meta-orig-format');
-    const metaTargetFormat = document.getElementById('meta-target-format');
-
-    let currentFile = null;
-    let fileMetadata = {
-        width: 0,
-        height: 0,
-        origDPI: 72,
-        format: ''
-    };
-
-    btnSelectFile.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0]);
-        }
-    });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.add('dragover');
-        }, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.remove('dragover');
-        }, false);
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length > 0) {
-            handleFileSelect(files[0]);
-        }
-    });
-
-    btnRemoveFile.addEventListener('click', () => {
-        resetDPIState();
-    });
-
-    targetDpiSelect.addEventListener('change', () => {
-        if (currentFile) {
-            updateMetadataTable(fileMetadata.width, fileMetadata.height, fileMetadata.origDPI, parseInt(targetDpiSelect.value), fileMetadata.format);
-        }
-    });
-
-    btnConvert.addEventListener('click', async () => {
-        if (!currentFile) return;
-
-        btnConvert.disabled = true;
-        btnConvert.innerHTML = `<i data-lucide="loader" class="animate-spin"></i> Converting...`;
-        lucide.createIcons();
-
-        try {
-            const targetDpi = parseInt(targetDpiSelect.value);
-            const arrayBuffer = await currentFile.arrayBuffer();
-            let modifiedBuffer = null;
-
-            if (fileMetadata.format === 'PNG') {
-                modifiedBuffer = changePngDpi(arrayBuffer, targetDpi);
-            } else if (fileMetadata.format === 'JPEG') {
-                modifiedBuffer = changeJpegDpi(arrayBuffer, targetDpi);
-            } else {
-                throw new Error('Format conversion not fully supported client-side.');
-            }
-
-            const blob = new Blob([modifiedBuffer], { type: currentFile.type });
-            const link = document.createElement('a');
-            const origName = currentFile.name;
-            const extensionIndex = origName.lastIndexOf('.');
-            const nameWithoutExt = extensionIndex !== -1 ? origName.substring(0, extensionIndex) : origName;
-            const ext = extensionIndex !== -1 ? origName.substring(extensionIndex) : '';
-
-            link.download = `${nameWithoutExt}_${targetDpi}dpi${ext}`;
-            link.href = URL.createObjectURL(blob);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            URL.revokeObjectURL(link.href);
-        } catch (err) {
-            console.error(err);
-            alert(`Error during conversion: ${err.message}`);
-        } finally {
-            btnConvert.disabled = false;
-            btnConvert.innerHTML = `<i data-lucide="refresh-cw"></i> Convert and Download`;
-            lucide.createIcons();
-        }
-    });
-
-    function handleFileSelect(file) {
-        const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/tiff', 'image/tif'];
-        if (!allowedTypes.includes(file.type) && !file.name.endsWith('.tiff') && !file.name.endsWith('.tif')) {
-            alert('Unsupported file format. Please upload PNG, JPEG, or TIFF.');
-            return;
-        }
-
-        currentFile = file;
-
-        dropZone.style.display = 'none';
-        fileDetails.classList.remove('hidden');
-        fileDetailsName.textContent = file.name;
-        fileDetailsSize.textContent = formatBytes(file.size);
-
-        let format = 'Unknown';
-        if (file.type.includes('png')) format = 'PNG';
-        else if (file.type.includes('jpeg') || file.type.includes('jpg')) format = 'JPEG';
-        else if (file.type.includes('tiff') || file.name.endsWith('.tiff') || file.name.endsWith('.tif')) format = 'TIFF';
-        
-        fileMetadata.format = format;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = async function() {
-                fileMetadata.width = img.width;
-                fileMetadata.height = img.height;
-                
-                const arrayBuffer = event.target.result;
-                let origDpi = 72;
-
-                try {
-                    if (format === 'PNG') {
-                        origDpi = getPngDpi(arrayBuffer) || 72;
-                    } else if (format === 'JPEG') {
-                        origDpi = getJpegDpi(arrayBuffer) || 72;
-                    }
-                } catch(e) {
-                    console.warn('Error reading file DPI:', e);
-                }
-
-                fileMetadata.origDPI = origDpi;
-                updateMetadataTable(img.width, img.height, origDpi, parseInt(targetDpiSelect.value), format);
-
-                if (format === 'TIFF') {
-                    btnConvert.disabled = true;
-                    alert('TIFF client-side DPI conversion is restricted. TIFF images preserve print sizes but are complex to safely modify in sandboxed browsers. Please convert your file to high-res PNG or JPEG.');
-                } else {
-                    btnConvert.disabled = false;
-                }
-            };
-            img.src = URL.createObjectURL(new Blob([event.target.result], {type: file.type}));
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    function resetDPIState() {
-        currentFile = null;
-        fileInput.value = '';
-        dropZone.style.display = 'flex';
-        fileDetails.classList.add('hidden');
-        btnConvert.disabled = true;
-
-        metaOrigDimensions.textContent = '-';
-        metaTargetDimensions.textContent = '-';
-        metaOrigPrintSize.textContent = '-';
-        metaTargetPrintSize.textContent = '-';
-        metaOrigDpi.textContent = '-';
-        metaTargetDpi.textContent = '-';
-        metaOrigFormat.textContent = '-';
-        metaTargetFormat.textContent = '-';
-    }
-
-    function updateMetadataTable(w, h, origDpi, targetDpi, format) {
-        metaOrigDimensions.textContent = `${w} x ${h} px`;
-        metaTargetDimensions.textContent = `${w} x ${h} px`;
-        
-        const origWInches = (w / origDpi).toFixed(2);
-        const origHInches = (h / origDpi).toFixed(2);
-        const targetWInches = (w / targetDpi).toFixed(2);
-        const targetHInches = (h / targetDpi).toFixed(2);
-
-        metaOrigPrintSize.textContent = `${origWInches}" x ${origHInches}"`;
-        metaTargetPrintSize.textContent = `${targetWInches}" x ${targetHInches}"`;
-        
-        metaOrigDpi.textContent = `${origDpi} DPI`;
-        metaTargetDpi.textContent = `${targetDpi} DPI`;
-        
-        metaOrigFormat.textContent = format;
-        metaTargetFormat.textContent = format;
-    }
-
-    function formatBytes(bytes, decimals = 2) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const dm = decimals < 0 ? 0 : decimals;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-    }
-
-    // ----------------------------------------------------------------------
-    // PNG Binary Metadata Parser & Modifier
-    // ----------------------------------------------------------------------
-    function getPngDpi(buffer) {
-        const view = new DataView(buffer);
-        let offset = 8;
-        
-        while (offset < view.byteLength) {
-            const length = view.getUint32(offset);
-            const chunkType = getChunkTypeName(view, offset + 4);
-            
-            if (chunkType === 'pHYs') {
-                const xPixelsPerMeter = view.getUint32(offset + 8);
-                const unit = view.getUint8(offset + 16);
-                if (unit === 1) {
-                    return Math.round(xPixelsPerMeter * 0.0254);
-                }
-            }
-            offset += 12 + length;
-        }
-        return null;
-    }
-
-    function changePngDpi(buffer, targetDpi) {
-        const view = new DataView(buffer);
-        const pixelsPerMeter = Math.round(targetDpi / 0.0254);
-        
-        let offset = 8;
-        let physOffset = -1;
-        let idatOffset = -1;
-        
-        while (offset < view.byteLength) {
-            const length = view.getUint32(offset);
-            const chunkType = getChunkTypeName(view, offset + 4);
-            
-            if (chunkType === 'pHYs') {
-                physOffset = offset;
-                break;
-            }
-            if (chunkType === 'IDAT') {
-                idatOffset = offset;
-                break;
-            }
-            offset += 12 + length;
-        }
-
-        if (physOffset !== -1) {
-            const newBuffer = new ArrayBuffer(buffer.byteLength);
-            const srcArr = new Uint8Array(buffer);
-            const destArr = new Uint8Array(newBuffer);
-            destArr.set(srcArr);
-            
-            const destView = new DataView(newBuffer);
-            destView.setUint32(physOffset + 8, pixelsPerMeter);
-            destView.setUint32(physOffset + 12, pixelsPerMeter);
-            destView.setUint8(physOffset + 16, 1);
-            
-            const crcData = new Uint8Array(newBuffer, physOffset + 4, 13);
-            const crcVal = crc32(crcData);
-            destView.setUint32(physOffset + 17, crcVal);
-            
-            return newBuffer;
-        } else {
-            const insertPoint = idatOffset !== -1 ? idatOffset : 33;
-            const chunkLength = 9;
-            const totalChunkSize = 4 + 4 + chunkLength + 4;
-            
-            const newBuffer = new ArrayBuffer(buffer.byteLength + totalChunkSize);
-            const destView = new DataView(newBuffer);
-            const srcArr = new Uint8Array(buffer);
-            const destArr = new Uint8Array(newBuffer);
-            
-            destArr.set(srcArr.subarray(0, insertPoint), 0);
-            
-            destView.setUint32(insertPoint, chunkLength);
-            destView.setUint8(insertPoint + 4, 112); // 'p'
-            destView.setUint8(insertPoint + 5, 72);  // 'H'
-            destView.setUint8(insertPoint + 6, 121); // 'y'
-            destView.setUint8(insertPoint + 7, 115); // 's'
-            destView.setUint32(insertPoint + 8, pixelsPerMeter);
-            destView.setUint32(insertPoint + 12, pixelsPerMeter);
-            destView.setUint8(insertPoint + 16, 1);
-            
-            const crcData = new Uint8Array(newBuffer, insertPoint + 4, 13);
-            const crcVal = crc32(crcData);
-            destView.setUint32(insertPoint + 17, crcVal);
-            
-            destArr.set(srcArr.subarray(insertPoint), insertPoint + totalChunkSize);
-            
-            return newBuffer;
-        }
-    }
-
-    function getChunkTypeName(view, offset) {
-        let name = '';
-        for (let i = 0; i < 4; i++) {
-            name += String.fromCharCode(view.getUint8(offset + i));
-        }
-        return name;
-    }
-
-    // ----------------------------------------------------------------------
-    // JPEG Binary Metadata Parser & Modifier
-    // ----------------------------------------------------------------------
-    function getJpegDpi(buffer) {
-        const view = new DataView(buffer);
-        if (view.getUint16(0) !== 0xFFD8) return null;
-        
-        let offset = 2;
-        while (offset < view.byteLength) {
-            const marker = view.getUint16(offset);
-            if (marker === 0xFFE0) {
-                const length = view.getUint16(offset + 2);
-                const identifier = getIdentifierString(view, offset + 4, 5);
-                if (identifier === 'JFIF\0') {
-                    const units = view.getUint8(offset + 13);
-                    if (units === 1 || units === 2) {
-                        const xDPI = view.getUint16(offset + 14);
-                        return units === 1 ? xDPI : Math.round(xDPI * 2.54);
-                    }
-                }
-                offset += 2 + length;
-            } else if ((marker & 0xFF00) === 0xFF00 && marker !== 0xFFD8 && marker !== 0xFFD9) {
-                const length = view.getUint16(offset + 2);
-                offset += 2 + length;
-            } else {
-                break;
-            }
-        }
-        return null;
-    }
-
-    function changeJpegDpi(buffer, targetDpi) {
-        const view = new DataView(buffer);
-        if (view.getUint16(0) !== 0xFFD8) throw new Error('Not a valid JPEG.');
-        
-        let offset = 2;
-        let app0Offset = -1;
-        
-        while (offset < view.byteLength) {
-            const marker = view.getUint16(offset);
-            if (marker === 0xFFE0) {
-                const length = view.getUint16(offset + 2);
-                const identifier = getIdentifierString(view, offset + 4, 5);
-                if (identifier === 'JFIF\0') {
-                    app0Offset = offset;
-                    break;
-                }
-                offset += 2 + length;
-            } else if ((marker & 0xFF00) === 0xFF00 && marker !== 0xFFD8 && marker !== 0xFFD9) {
-                const length = view.getUint16(offset + 2);
-                offset += 2 + length;
-            } else {
-                break;
-            }
-        }
-
-        if (app0Offset !== -1) {
-            const newBuffer = new ArrayBuffer(buffer.byteLength);
-            const srcArr = new Uint8Array(buffer);
-            const destArr = new Uint8Array(newBuffer);
-            destArr.set(srcArr);
-            
-            const destView = new DataView(newBuffer);
-            destView.setUint8(app0Offset + 13, 1);
-            destView.setUint16(app0Offset + 14, targetDpi);
-            destView.setUint16(app0Offset + 16, targetDpi);
-            
-            return newBuffer;
-        } else {
-            const app0SegmentSize = 18;
-            const newBuffer = new ArrayBuffer(buffer.byteLength + app0SegmentSize);
-            const destView = new DataView(newBuffer);
-            const srcArr = new Uint8Array(buffer);
-            const destArr = new Uint8Array(newBuffer);
-            
-            destArr.set(srcArr.subarray(0, 2), 0);
-            
-            destView.setUint16(2, 0xFFE0);
-            destView.setUint16(4, 16);
-            destView.setUint8(6, 74);  // 'J'
-            destView.setUint8(7, 70);  // 'F'
-            destView.setUint8(8, 73);  // 'I'
-            destView.setUint8(9, 70);  // 'F'
-            destView.setUint8(10, 0);
-            destView.setUint8(11, 1);
-            destView.setUint8(12, 2);
-            destView.setUint8(13, 1);
-            destView.setUint16(14, targetDpi);
-            destView.setUint16(16, targetDpi);
-            destView.setUint8(18, 0);
-            destView.setUint8(19, 0);
-            
-            destArr.set(srcArr.subarray(2), 20);
-            
-            return newBuffer;
-        }
-    }
-
-    function getIdentifierString(view, offset, length) {
-        let str = '';
-        for (let i = 0; i < length; i++) {
-            str += String.fromCharCode(view.getUint8(offset + i));
-        }
-        return str;
-    }
-
-    function crc32(buf) {
-        let table = [];
-        for (let i = 0; i < 256; i++) {
-            let c = i;
-            for (let j = 0; j < 8; j++) {
-                c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-            }
-            table[i] = c;
-        }
-        let crc = 0 ^ (-1);
-        for (let i = 0; i < buf.length; i++) {
-            crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 0xFF];
-        }
-        return (crc ^ (-1)) >>> 0;
-    }
-}
+// Figure Prep is initialized via ./src/figure/figurePrep.js
 
 // ==========================================================================
-// Universal Table Converter (Excel ⇄ Markdown)
+// Universal Table Converter (Excel â‡„ Markdown)
 // ==========================================================================
 function initTableConverter() {
     const rawInput = document.getElementById('table-raw-input');
@@ -1724,7 +1309,7 @@ function initLLMTester() {
 
             const meta = document.createElement('span');
             meta.className = 'chat-message-meta';
-            meta.textContent = `${model} · ${latency}ms`;
+            meta.textContent = `${model} Â· ${latency}ms`;
             pendingRole.appendChild(meta);
 
             setChatStatus(`Response received in ${latency}ms (HTTP ${statusCode}).`);
